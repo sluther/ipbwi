@@ -85,6 +85,8 @@
 					$this->board['cookie_domain']						= ipbwi_COOKIE_DOMAIN;
 					$this->ips_wrapper->settings['cookie_domain']		= ipbwi_COOKIE_DOMAIN;
 				}
+				// init cache
+				$this->cache = new Ipbwi_Cache($this);
 			}
 		}
 		public function __destruct() {
