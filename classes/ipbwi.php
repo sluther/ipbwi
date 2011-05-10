@@ -100,8 +100,10 @@
 			$libLang = array();
 			if(file_exists(__DIR__.'/ipbwi/lang/'.$lang.'.php')){
 				if(include(__DIR__.'/ipbwi/lang/'.$lang.'.php')){
-//					ipbwi_OVERWRITE_LOCAL
-//					ipbwi_OVERWRITE_CHARSET
+					
+					$local = $liblang['local'];
+					$encoding = $liblang['encoding'];
+					
 					if(ipbwi_UTF8){
 						$encoding = 'UTF-8';
 					}
