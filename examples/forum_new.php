@@ -14,7 +14,7 @@
 
 	// Initialization
 	$pageTitle		= 'Add a new forum';
-	require_once('../ipbwi/ipbwi.inc.php');
+	require_once('../init.php');
 	require_once('lib/php/includes.inc.php');
 
 	$permsCat		= array( // test category permissions

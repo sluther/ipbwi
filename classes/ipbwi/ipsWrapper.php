@@ -1,5 +1,5 @@
 <?php
-
+namespace Ipbwi;
 define('IPB_THIS_SCRIPT', 'public');
 define( 'IN_IPB', 1 );
 define( 'IPS_IS_SHELL', TRUE); // make offlinemode possible without crashing IPBWI
@@ -14,7 +14,7 @@ if(file_exists(ipbwi_BOARD_ADMIN_PATH.'api/api_core.php') === false){
 
 require_once(ipbwi_BOARD_ADMIN_PATH.'api/api_core.php');
 
-class ipbwi_ips_wrapper extends apiCore {
+class Ipbwi_IpsWrapper extends \apiCore {
 	public	$loggedIn;
 	public	$DB;
 	public	$settings;
@@ -34,11 +34,11 @@ class ipbwi_ips_wrapper extends apiCore {
 		
 		// get common functions
 		require_once(ipbwi_BOARD_ADMIN_PATH.'sources/base/ipsController.php');
-		$this->command		= new ipsCommand_default();
+		$this->command		= new \ipsCommand_default();
 		
 		// initialize session
 		require_once(ipbwi_BOARD_ADMIN_PATH.'sources/classes/session/publicSessions.php');
-		$this->session		= new publicSessions();
+		$this->session		= new \publicSessions();
 
 		// prepare bbcode functions
 		$this->cache->rebuildCache( 'emoticons', 'global' );
@@ -49,30 +49,27 @@ class ipbwi_ips_wrapper extends apiCore {
 		// MEMBER FUNCTIONS
 		
 		// get login / logout functions
-		require_once(ipbwi_ROOT_PATH.'lib/ips/ips_public_core_global_login.inc.php');
-		$this->login = new ipbwi_ips_public_core_global_login();
+		$this->login = new Ipbwi_Ips_Public_Core_Global_Login();
 		$this->login->initHanLogin($this->registry); 
 		
 		// get registration function
-		require_once(ipbwi_ROOT_PATH.'lib/ips/ips_register.inc.php');
-		$this->register = new ipbwi_ips_public_core_global_register();
+		$this->register = new Ipbwi_Ips_Public_Core_Global_Register();
 		$this->register->initRegister($this->registry);
 		
 		// deactivate redirect function
-		require_once(ipbwi_ROOT_PATH.'lib/ips/ips_output.inc.php');
-		$this->registry->output = new ipbwi_ips_output($this->registry, true);
+		$this->registry->output = new Ipbwi_Ips_Output($this->registry, true);
 		
 		// get permission functions
 		require_once(ipbwi_BOARD_ADMIN_PATH.'sources/classes/class_public_permissions.php');
-		$this->perm = new classPublicPermissions($this->registry);
+		$this->perm = new \classPublicPermissions($this->registry);
 		
 		// get bbcode functions
 		require_once(ipbwi_BOARD_ADMIN_PATH.'sources/handlers/han_parse_bbcode.php');
-		$this->parser = new parseBbcode($this->registry);
+		$this->parser = new \parseBbcode($this->registry);
 		
 		// get messenger functions
 		require_once(ipbwi_BOARD_ADMIN_PATH.'applications/members/sources/classes/messaging/messengerFunctions.php');
-		$this->messenger = new messengerFunctions($this->registry);
+		$this->messenger = new \messengerFunctions($this->registry);
 		
 		// get member functions
 		//require_once(ipbwi_BOARD_ADMIN_PATH.'sources/classes/member/memberFunctions.php');
@@ -109,7 +106,7 @@ class ipbwi_ips_wrapper extends apiCore {
 		// Generate a new random password
 		//-----------------------------------------
 		
-		$new_pass = IPSText::parseCleanValue( urldecode($newPass));
+		$new_pass = \IPSText::parseCleanValue( urldecode($newPass));
 		
 		//-----------------------------------------
 		// Generate a new salt

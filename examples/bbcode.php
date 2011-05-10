@@ -14,7 +14,7 @@
 
 	// Initialization
 	$pageTitle		= 'BBCode';
-	require_once('../ipbwi/ipbwi.inc.php');
+	require_once('../init.php');
 	require_once('lib/php/includes.inc.php');
 
 	$bbCode = '[b]test[/b] :)';

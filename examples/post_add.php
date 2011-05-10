@@ -15,7 +15,7 @@
 	error_reporting(E_ALL);
 	// Initialization
 	$pageTitle = 'Post Add';
-	require_once('../ipbwi/ipbwi.inc.php');
+	require_once('../init.php');
 	require_once('lib/php/includes.inc.php');
 
 	if(isset($_POST['post']) && $_POST['post'] != ''){

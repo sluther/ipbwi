@@ -15,7 +15,7 @@
 	error_reporting(E_ALL);
 	// Initialization
 	$pageTitle = 'Member Login';
-	require_once('../ipbwi/ipbwi.inc.php');
+	require_once('../init.php');
 
 	if(isset($_POST['action']) && $_POST['action'] == 'login'){
 		if(empty($_POST['username'])){

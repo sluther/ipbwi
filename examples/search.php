@@ -14,7 +14,7 @@
 
 	// Initialization
 	$pageTitle		= 'Search';
-	require_once('../ipbwi/ipbwi.inc.php');
+	require_once('../init.php');
 	require_once('lib/php/includes.inc.php');
 
 	if(isset($_POST['request'])){

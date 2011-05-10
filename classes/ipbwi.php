@@ -11,20 +11,10 @@
 	 * @license			http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License
 	 */
 	// load config file
-	require_once('config.inc.php');
-	// check if PHP version is 5 or higher
-	if(version_compare(PHP_VERSION,'5.0.0','<')){
-		die('<p>ERROR: You need PHP 5 or higher to use IPBWI. Your current version is '.PHP_VERSION.'</p>');
-	}
-	// check if board path is set
-	if(!defined('ipbwi_BOARD_PATH') || ipbwi_BOARD_PATH == ''){
-		die('<p>ERROR: You have to define a board\'s path in your IPBWI config file.</p>');
-	}
-	// check if ipbwi path is set
-	if(!defined('ipbwi_ROOT_PATH') || ipbwi_ROOT_PATH == ''){
-		die('<p>ERROR: You have to define the root path of your IPBWI installation in your IPBWI config file.</p>');
-	}
-	class ipbwi {
+	
+	namespace Ipbwi;
+	
+	class Ipbwi {
 		const 				VERSION			= '3.030';
 		const 				TITLE			= 'IPBWI';
 		const 				PROJECT_LEADER	= 'Matthias Reuter';
@@ -38,6 +28,7 @@
 		private static 		$systemMessage	= array();
 		protected 			$board			= array();
 		public				$DBlog			= null;
+
 		/**
 		 * @desc			Load's requested libraries dynamicly
 		 * @param	string	$name library-name
@@ -47,15 +38,14 @@
 		 * @ignore
 		 */
 		public function __get($name){
-			if(file_exists(ipbwi_ROOT_PATH.'lib/'.$name.'.inc.php')){
-				require_once(ipbwi_ROOT_PATH.'lib/'.$name.'.inc.php');
-				$classname = 'ipbwi_'.$name;
+			$name = ucfirst($name);
+			if(!class_exists($name)) {
+				$classname = '\Ipbwi\Ipbwi_'.$name;
 				$this->$name = new $classname($this);
 				return $this->$name;
-			}else{
-				die('Class '.$name.' could not be loaded (tried to load class-file '.ipbwi_ROOT_PATH.'lib/'.$name.'.inc.php'.')');
 			}
 		}
+
 		/**
 		 * @desc			Loads and checks different vars when class is initiating
 		 * @author			Matthias Reuter
@@ -74,9 +64,8 @@
 			}
 			
 			// initialize IP.board Interface
-			require_once(ipbwi_ROOT_PATH.'lib/ips_wrapper.inc.php');
 			if(!defined('IPBWI_INCORRECT_BOARD_PATH')){
-				$this->ips_wrapper = new ipbwi_ips_wrapper();
+				$this->ips_wrapper = new Ipbwi_IpsWrapper();
 				
 				// retrieve common vars
 				$this->board					= $this->ips_wrapper->settings;
@@ -109,8 +98,8 @@
 		 */
 		public static function setLang($lang){
 			$libLang = array();
-			if(file_exists(ipbwi_ROOT_PATH.'lib/lang/'.$lang.'.inc.php')){
-				if(include(ipbwi_ROOT_PATH.'lib/lang/'.$lang.'.inc.php')){
+			if(file_exists(__DIR__.'/ipbwi/lang/'.$lang.'.php')){
+				if(include(__DIR__.'/ipbwi/lang/'.$lang.'.php')){
 //					ipbwi_OVERWRITE_LOCAL
 //					ipbwi_OVERWRITE_CHARSET
 					if(ipbwi_UTF8){
@@ -429,12 +418,5 @@
 			}
 			return $timeStamp;
 		}
-	}
-
-	// start class
-	if(empty($ipbwi)){
-		$ipbwi = new ipbwi();
-	}else{
-		die('<p>Error: You have to include and load IPBWI once only.</p>');
 	}
 ?>

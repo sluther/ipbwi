@@ -8,7 +8,8 @@
 	 * @since			2.0
 	 * @license			http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License
 	 */
-	class ipbwi_forum extends ipbwi {
+	namespace Ipbwi;
+	class Ipbwi_Forum extends Ipbwi {
 		private $ipbwi			= null;
 		/**
 		 * @desc			Loads and checks different vars when class is initiating

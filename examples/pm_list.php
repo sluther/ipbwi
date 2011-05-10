@@ -14,7 +14,7 @@
 
 	// Initialization
 	$pageTitle = 'List PMs of a folder';
-	require_once('../ipbwi/ipbwi.inc.php');
+	require_once('../init.php');
 	require_once('lib/php/includes.inc.php');
 
 	echo $header;

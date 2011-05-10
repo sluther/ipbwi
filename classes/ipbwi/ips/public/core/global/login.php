@@ -1,7 +1,7 @@
 <?php
-
+namespace Ipbwi;
 require_once(ipbwi_BOARD_ADMIN_PATH.'applications/core/modules_public/global/login.php');
-class ipbwi_ips_public_core_global_login extends public_core_global_login {
+class Ipbwi_Ips_Public_Core_Global_Login extends \public_core_global_login {
 
 	// load login handler. these functions are the base for login and logout
 	public function initHanLogin($core=false)
@@ -18,7 +18,7 @@ class ipbwi_ips_public_core_global_login extends public_core_global_login {
 		$this->caches     = $this->registry->cache()->fetchCaches();
 	
     	require_once( IPS_ROOT_PATH . 'sources/handlers/han_login.php' );
-    	$this->han_login =  new han_login($this->registry);
+    	$this->han_login =  new \han_login($this->registry);
     	$this->han_login->init();
 	}
 	

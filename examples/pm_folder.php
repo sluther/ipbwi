@@ -14,7 +14,7 @@
 
 	// Initialization
 	$pageTitle = 'Manage PM Folder';
-	require_once('../ipbwi/ipbwi.inc.php');
+	require_once('../init.php');
 	require_once('lib/php/includes.inc.php');
 	// empty PM Folder
 	if(isset($_POST['empty'])){

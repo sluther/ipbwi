@@ -8,7 +8,8 @@
 	 * @since			2.0
 	 * @license			http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License
 	 */
-	class ipbwi_gallery extends ipbwi {
+	namespace Ipbwi;
+	class Ipbwi_Gallery extends Ipbwi {
 		private $ipbwi			= null;
 		public $installed		= false;
 		public $url				= false;

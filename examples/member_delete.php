@@ -14,7 +14,7 @@
 
 	// Initialization
 	$pageTitle = 'delete Member Account';
-	require_once('../ipbwi/ipbwi.inc.php');
+	require_once('../init.php');
 	require_once('lib/php/includes.inc.php');
 
 	$member = $ipbwi->member->info();

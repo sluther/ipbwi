@@ -12,7 +12,7 @@
 	 * @ignore
 	 */
 
-	require_once('../ipbwi/ipbwi.inc.php');
+	require_once('../init.php');
 	$pageTitle = 'Topic Info';
 	require_once('lib/php/includes.inc.php');
 

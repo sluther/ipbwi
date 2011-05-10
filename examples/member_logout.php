@@ -14,7 +14,7 @@
 
 	// Initialization
 	$pageTitle = 'Member Logout';
-	require_once('../ipbwi/ipbwi.inc.php');
+	require_once('../init.php');
 
 	if(!$ipbwi->member->isLoggedIn()){
 		$already = true;

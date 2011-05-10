@@ -14,7 +14,7 @@
 
 	// Initialization
 	$pageTitle = 'Attachment downloading &amp; uploading';
-	require_once('../ipbwi/ipbwi.inc.php');
+	require_once('../init.php');
 	require_once('lib/php/includes.inc.php');
 
 	// show/download attachment

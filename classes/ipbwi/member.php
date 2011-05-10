@@ -8,7 +8,8 @@
 	 * @since			2.0
 	 * @license			http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License
 	 */
-	class ipbwi_member extends ipbwi {
+	namespace Ipbwi;
+	class Ipbwi_Member extends Ipbwi {
 		private $ipbwi			= null;
 		private $loggedIn		= null;
 		public	$myInfo			= null;
@@ -1028,7 +1029,7 @@
 			}
 			if(isset($pw)){
 				$_POST['password'] = $pw;
-				$this->ipbwi->ips_wrapper->request['password'] = IPSText::parseCleanValue( urldecode($pw));
+				$this->ipbwi->ips_wrapper->request['password'] = \IPSText::parseCleanValue( urldecode($pw));
 			}
 			$status = $this->ipbwi->ips_wrapper->login->doLogin();
 			if(isset($status[2])){

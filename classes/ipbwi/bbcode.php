@@ -8,7 +8,8 @@
 	 * @since			2.0
 	 * @license			http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License
 	 */
-	class ipbwi_bbcode extends ipbwi {
+	namespace Ipbwi;
+	class Ipbwi_Bbcode extends Ipbwi {
 		private $ipbwi			= null;
 		/**
 		 * @desc			Loads and checks different vars when class is initiating
@@ -149,18 +150,18 @@
 EOF_SCRIPT;
 
 		
-			IPSText::getTextClass('bbcode')->parse_html			= 0;
-			IPSText::getTextClass('bbcode')->parse_wordwrap		= 0;
-			IPSText::getTextClass('bbcode')->bypass_badwords	= true;
-			IPSText::getTextClass('bbcode')->rte_width			= 200;
+			\IPSText::getTextClass('bbcode')->parse_html			= 0;
+			\IPSText::getTextClass('bbcode')->parse_wordwrap		= 0;
+			\IPSText::getTextClass('bbcode')->bypass_badwords	= true;
+			\IPSText::getTextClass('bbcode')->rte_width			= 200;
 			
-			$rte_post = IPSText::getTextClass('bbcode')->convertForRTE($post);
+			$rte_post = \IPSText::getTextClass('bbcode')->convertForRTE($post);
 			
 			$form = '<div id="ipboard_body">'.
 				str_replace(
 					array('<#EMO_DIR#>','undefined&amp;app=forums'),
 					array('default',$this->ipbwi->getBoardVar('url').'/index.php?app=forums'),
-					@IPSText::getTextClass('editor')->showEditor($rte_post, $field))
+					@\IPSText::getTextClass('editor')->showEditor($rte_post, $field))
 			.'</div>';
 			
 			// if user has set rich text editor
@@ -174,13 +175,13 @@ EOF_SCRIPT;
 				}
 			// if user has set standard text editor
 			}else{
-			IPSText::getTextClass('bbcode')->parse_html			= 0;
-			IPSText::getTextClass('bbcode')->parse_nl2br		= 1;
-			IPSText::getTextClass('bbcode')->parse_smilies		= 1;
-			IPSText::getTextClass('bbcode')->parse_bbcode		= 1;
-			IPSText::getTextClass('bbcode')->parsing_section	= 'global';
+			\IPSText::getTextClass('bbcode')->parse_html			= 0;
+			\IPSText::getTextClass('bbcode')->parse_nl2br		= 1;
+			\IPSText::getTextClass('bbcode')->parse_smilies		= 1;
+			\IPSText::getTextClass('bbcode')->parse_bbcode		= 1;
+			\IPSText::getTextClass('bbcode')->parsing_section	= 'global';
 			
-			$std = '<textarea name="'.$field.'" class="std_text" cols="40" rows="10">'.IPSText::getTextClass('bbcode')->preEditParse($post).'</textarea>';
+			$std = '<textarea name="'.$field.'" class="std_text" cols="40" rows="10">'.\IPSText::getTextClass('bbcode')->preEditParse($post).'</textarea>';
 			
 			return $std;
 			}

@@ -16,13 +16,13 @@
 
 	// Initialization
 	$pageTitle = 'Information';
-	$ipbwicore = '../ipbwi/ipbwi.inc.php';
+	$ipbwicore = '../init.php';
 	if(!file_exists($ipbwicore)){
 		die('<p>Could not load '.$ipbwicore.'. Please check the include-path in '.$_SERVER['PHP_SELF'].'</p>');
 	}else{
 		require_once($ipbwicore);
 	}
-	if(!is_object($ipbwi) || get_class($ipbwi) != 'ipbwi'){
+	if(!is_object($ipbwi) || get_class($ipbwi) !== "Ipbwi\\Ipbwi"){
 		die('<p>IPBWI class does not exist. Please check variable $ipbwi in '.$_SERVER['PHP_SELF'].'</p>');
 	}
 	require_once('lib/php/includes.inc.php');
@@ -107,8 +107,8 @@ echo '
 				<div class="i_applications_internet">
 					<strong>Version</strong>
 					<ul>
-						<li><p>Version installed: <a href="http://ipbwi.com/products/"><strong><?php echo ipbwi::VERSION; ?></strong></a></p></li>
-						<li><p>Compatibility: PHP 5 or higher, IPB v3.x</p></li>
+						<li><p>Version installed: <a href="http://ipbwi.com/products/"><strong><?php echo $ipbwi::VERSION; ?></strong></a></p></li>
+						<li><p>Compatibility: PHP 5.3 or higher, IPB v3.x</p></li>
 						<li><p>License: <strong><a href="http://www.gnu.org/licenses/gpl.html">GPL 3.0 or higher</a></strong></p></li>
 					</ul>
 				</div>

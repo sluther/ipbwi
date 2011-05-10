@@ -1,7 +1,7 @@
 <?php
-
+namespace Ipbwi;
 require_once(ipbwi_BOARD_ADMIN_PATH.'applications/core/modules_public/global/register.php' );
-class ipbwi_ips_public_core_global_register extends public_core_global_register {
+class Ipbwi_Ips_Public_Core_Global_Register extends \public_core_global_register {
 
 	public $errors		= null;
 	public $request		= array();
@@ -14,7 +14,7 @@ class ipbwi_ips_public_core_global_register extends public_core_global_register 
 		$this->settings		= $this->registry->fetchSettings();
 		$this->request		= $this->registry->fetchRequest();
 		$this->lang			= $this->registry->getClass('class_localization');
-		ipsRegistry::getClass('class_localization')->loadLanguageFile(array('public_register'), 'core');
+		\ipsRegistry::getClass('class_localization')->loadLanguageFile(array('public_register'), 'core');
 		$this->member		= $this->registry->member();
 		$this->memberData	= $this->registry->member()->fetchMemberData();
 		$this->cache		= $this->registry->cache();

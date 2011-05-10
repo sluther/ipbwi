@@ -32,16 +32,6 @@
 	}
 
 	/**
-	 * The full qualified filesystem path to the folder of your IPBWI installation.
-	 * You must add a trailing slash.
-	 *
-	 * Example path: '/home/public_html/website/ipbwi/'
-	 */
-	if(!defined('ipbwi_ROOT_PATH')){
-		define('ipbwi_ROOT_PATH','');
-	}
-
-	/**
 	 * The base-URL of your website. This is needed to get the live-examples viewed properly.
 	 * You must add a trailing slash.
 	 *
