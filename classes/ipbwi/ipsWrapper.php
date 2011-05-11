@@ -1,18 +1,11 @@
 <?php
 namespace Ipbwi;
 define('IPB_THIS_SCRIPT', 'public');
-define( 'IN_IPB', 1 );
+//define( 'IN_IPB', 1 );
 define( 'IPS_IS_SHELL', TRUE); // make offlinemode possible without crashing IPBWI
 define( 'ALLOW_FURLS', FALSE ); // disable friendly url check
 define('CCS_GATEWAY_CALLED', 1);
 $_POST['rememberMe'] = 1; // hotfix for sticky cookies
-
-if(file_exists(ipbwi_BOARD_ADMIN_PATH.'api/api_core.php') === false){
-	echo '<p><strong>Error:</strong> Board path is not correct: '.ipbwi_BOARD_PATH.'</p>';
-	define('IPBWI_INCORRECT_BOARD_PATH',true);
-}else{
-
-require_once(ipbwi_BOARD_ADMIN_PATH.'api/api_core.php');
 
 class Ipbwi_IpsWrapper extends \apiCore {
 	public	$loggedIn;
@@ -26,18 +19,18 @@ class Ipbwi_IpsWrapper extends \apiCore {
 	public	$perm;
 	public	$parser;
 	
-	public function __construct(){
+	public function __construct($config){
 		$this->init();
 		
 		$this->loggedIn					= (bool) $this->lang->memberData['member_id']; // status wether a member is logged in
 		$this->settings['base_url']		= $this->settings['board_url'].'?';
 		
 		// get common functions
-		require_once(ipbwi_BOARD_ADMIN_PATH.'sources/base/ipsController.php');
+		require_once($config->board_admin_path.'sources/base/ipsController.php');
 		$this->command		= new \ipsCommand_default();
 		
 		// initialize session
-		require_once(ipbwi_BOARD_ADMIN_PATH.'sources/classes/session/publicSessions.php');
+		require_once($config->board_admin_path.'sources/classes/session/publicSessions.php');
 		$this->session		= new \publicSessions();
 
 		// prepare bbcode functions
@@ -49,26 +42,29 @@ class Ipbwi_IpsWrapper extends \apiCore {
 		// MEMBER FUNCTIONS
 		
 		// get login / logout functions
+		require_once($config->board_admin_path.'applications/core/modules_public/global/login.php');
 		$this->login = new Ipbwi_Ips_Public_Core_Global_Login();
 		$this->login->initHanLogin($this->registry); 
 		
 		// get registration function
+		require_once($config->board_admin_path.'applications/core/modules_public/global/register.php');
 		$this->register = new Ipbwi_Ips_Public_Core_Global_Register();
 		$this->register->initRegister($this->registry);
 		
 		// deactivate redirect function
+		require_once($config->board_admin_path.'sources/classes/output/publicOutput.php' );
 		$this->registry->output = new Ipbwi_Ips_Output($this->registry, true);
 		
 		// get permission functions
-		require_once(ipbwi_BOARD_ADMIN_PATH.'sources/classes/class_public_permissions.php');
+		require_once($config->board_admin_path.'sources/classes/class_public_permissions.php');
 		$this->perm = new \classPublicPermissions($this->registry);
 		
 		// get bbcode functions
-		require_once(ipbwi_BOARD_ADMIN_PATH.'sources/handlers/han_parse_bbcode.php');
+		require_once($config->board_admin_path.'sources/handlers/han_parse_bbcode.php');
 		$this->parser = new \parseBbcode($this->registry);
 		
 		// get messenger functions
-		require_once(ipbwi_BOARD_ADMIN_PATH.'applications/members/sources/classes/messaging/messengerFunctions.php');
+		require_once($config->board_admin_path.'applications/members/sources/classes/messaging/messengerFunctions.php');
 		$this->messenger = new \messengerFunctions($this->registry);
 		
 		// get member functions
@@ -146,7 +142,5 @@ class Ipbwi_IpsWrapper extends \apiCore {
 		IPSMember::updatePassword( $member['member_id'], md5( $new_pass ) );
 		IPSLib::runMemberSync( 'onPassChange', $member['member_id'], $new_pass );
 	}
-}
-
 }
 ?>

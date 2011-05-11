@@ -21,13 +21,14 @@
 		const 				DEV_TEAM		= 'Matthias Reuter';
 		const 				WEBSITE			= 'http://ipbwi.com/';
 		const 				DOCS			= 'http://docs.ipbwi.com/';
-		private static		$lang			= ipbwi_LANG;
+		private static		$lang			= null;
 		private static		$libLang		= array();
 		protected static	$ips			= null;
 		protected			$common			= array();
 		private static 		$systemMessage	= array();
 		protected 			$board			= array();
 		public				$DBlog			= null;
+		protected			$config		= null;
 
 		/**
 		 * @desc			Load's requested libraries dynamicly
@@ -52,20 +53,21 @@
 		 * @since			2.0
 		 * @ignore
 		 */
-		public function __construct(){
-			// check for DB prefix
-			if(ipbwi_DB_prefix == ''){
-				define('ipbwi_DB_prefix','ipbwi_');
-			}
-			if(defined('ipbwi_LANG')){
-				self::setLang(ipbwi_LANG);
-			}else{
-				self::setLang('en');
-			}
+		public function __construct($config){
+			// init config
+			$this->config = new Ipbwi_Config($config);
 			
+			// check for DB prefix
+			if($this->config->db_prefix == ''){
+				$this->config->db_prefix = 'ipbwi_';
+			}
+			self::setLang($this->config);
+
+
 			// initialize IP.board Interface
-			if(!defined('IPBWI_INCORRECT_BOARD_PATH')){
-				$this->ips_wrapper = new Ipbwi_IpsWrapper();
+			if(file_exists($this->config->board_admin_path.'api/api_core.php') === true) {
+				require_once($this->config->board_admin_path.'api/api_core.php');
+				$this->ips_wrapper = new Ipbwi_IpsWrapper($this->config);
 				
 				// retrieve common vars
 				$this->board					= $this->ips_wrapper->settings;
@@ -73,20 +75,21 @@
 				$this->board['version_long']	= $this->ips_wrapper->caches['app_cache']['core']['app_long_version'];
 				$this->board['url']				= str_replace('?','',$this->ips_wrapper->settings['board_url']).'/';
 				$this->board['name']			= $this->ips_wrapper->settings['board_name'];
-				$this->board['basedir']			= ipbwi_BOARD_PATH;
+				$this->board['basedir']			= $this->config->board_path;
 				$this->board['upload_dir']		= $this->ips_wrapper->settings['upload_dir'].'/';
 				$this->board['upload_url']		= $this->ips_wrapper->settings['upload_url'].'/';
 				$this->board['home_name']		= $this->ips_wrapper->settings['home_name'];
 				$this->board['home_url']		= $this->ips_wrapper->settings['home_url'].'/';
 				$this->board['emo_url']			= str_replace('<#EMO_DIR#>','default',$this->ips_wrapper->settings['emoticons_url']).'/';
 				
-				
-				if(defined('ipbwi_COOKIE_DOMAIN')){
-					$this->board['cookie_domain']						= ipbwi_COOKIE_DOMAIN;
-					$this->ips_wrapper->settings['cookie_domain']		= ipbwi_COOKIE_DOMAIN;
+				if($this->config->cookie_domain !== '') {
+					$this->board['cookie_domain']						= $this->config->cookie_domain;
+					$this->ips_wrapper->settings['cookie_domain']		= $this->config->cookie_domain;
 				}
 				// init cache
 				$this->cache = new Ipbwi_Cache($this);
+			} else {
+				die('<p><strong>Error:</strong> Board admin path is not correct: '.$this->config->board_admin_path.'</p>');
 			}
 		}
 		public function __destruct() {
@@ -98,7 +101,13 @@
 		 * @author			Matthias Reuter
 		 * @since			2.0
 		 */
-		public static function setLang($lang){
+		public static function setLang($config){
+			
+			if($config->lang == ''){
+				$lang = 'en';
+			}else{
+				$lang = $config->lang;
+			}
 			$libLang = array();
 			if(file_exists(__DIR__.'/ipbwi/lang/'.$lang.'.php')){
 				if(include(__DIR__.'/ipbwi/lang/'.$lang.'.php')){
@@ -106,14 +115,14 @@
 					$local = $liblang['local'];
 					$encoding = $liblang['encoding'];
 					
-					if(ipbwi_UTF8){
+					if($config->utf8){
 						$encoding = 'UTF-8';
 					}
-					if(defined('ipbwi_OVERWRITE_LOCAL') && ipbwi_OVERWRITE_LOCAL !== false){
-						$local = ipbwi_OVERWRITE_LOCAL;
+					if($config->overwrite_locale !== false){
+						$local = $config->overwrite_locale;
 					}
-					if(defined('ipbwi_OVERWRITE_ENCODING') && ipbwi_OVERWRITE_ENCODING !== false){
-						$encoding = ipbwi_OVERWRITE_ENCODING;
+					if($config->overwrite_encoding!== false){
+						$encoding = $config->overwrite_encoding;
 					}
 					@setlocale(LC_ALL, "$local.$encoding");
 

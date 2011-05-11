@@ -22,7 +22,7 @@
 		public function __construct($ipbwi){
 			// loads common classes
 			$this->ipbwi = $ipbwi;
-
+			 
 			// checks if the current user is logged in
 			if($this->ipbwi->ips_wrapper->loggedIn == 0){
 				$this->loggedIn = false;
@@ -131,7 +131,7 @@
 				return $cache;
 			}else{
 				// Return user info if UID given
-				$info = IPSMember::load($userID);
+				$info = \IPSMember::load($userID);
 				$this->ipbwi->cache->save('memberInfo', $userID, $info);
 				return $info;
 			}

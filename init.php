@@ -1,16 +1,7 @@
 <?php
 
-require_once('config.inc.php');
+$config = require_once('config.inc.php');
 // check if PHP version is 5 or higher
-if(version_compare(PHP_VERSION,'5.3.0','<')){
-	die('<p>ERROR: You need PHP 5.3 or higher to use IPBWI. Your current version is '.PHP_VERSION.'</p>');
-}
-// check if board path is set
-if(!defined('ipbwi_BOARD_PATH') || ipbwi_BOARD_PATH == ''){
-	die('<p>ERROR: You have to define a board\'s path in your IPBWI config file.</p>');
-}
-
-//require_once('classes/ipbwi.php');
 
 // Credit goes to the Fuel team for this... :)
 // http://www.fuelphp.com/
@@ -42,4 +33,4 @@ function autoload($class) {
 	}
 }
 spl_autoload_register('autoload', true, true);
-$ipbwi = new \Ipbwi\Ipbwi();
+$ipbwi = new \Ipbwi\Ipbwi($config);

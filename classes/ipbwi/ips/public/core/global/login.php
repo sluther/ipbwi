@@ -1,6 +1,5 @@
 <?php
 namespace Ipbwi;
-require_once(ipbwi_BOARD_ADMIN_PATH.'applications/core/modules_public/global/login.php');
 class Ipbwi_Ips_Public_Core_Global_Login extends \public_core_global_login {
 
 	// load login handler. these functions are the base for login and logout

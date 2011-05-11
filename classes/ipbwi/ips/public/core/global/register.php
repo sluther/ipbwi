@@ -1,6 +1,5 @@
 <?php
 namespace Ipbwi;
-require_once(ipbwi_BOARD_ADMIN_PATH.'applications/core/modules_public/global/register.php' );
 class Ipbwi_Ips_Public_Core_Global_Register extends \public_core_global_register {
 
 	public $errors		= null;

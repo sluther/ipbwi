@@ -1,6 +1,5 @@
 <?php
 namespace Ipbwi;
-require_once(ipbwi_BOARD_ADMIN_PATH.'sources/classes/output/publicOutput.php' );
 class Ipbwi_Ips_Output extends \output {
 
 	public $errors = null;
