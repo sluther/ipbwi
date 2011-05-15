@@ -23,51 +23,49 @@
 		const 				DOCS			= 'http://docs.ipbwi.com/';
 		private static		$lang			= null;
 		private static		$libLang		= array();
+		protected static	$instance		= null;
 		protected static	$ips			= null;
 		protected			$common			= array();
 		private static 		$systemMessage	= array();
 		protected 			$board			= array();
 		public				$DBlog			= null;
-		protected			$config		= null;
-
+//		protected			$config			= null;
+		private				$loaded_classes = array();
+	
 		/**
-		 * @desc			Load's requested libraries dynamicly
-		 * @param	string	$name library-name
-		 * @return			class object of the requested library
-		 * @author			Matthias Reuter
-		 * @since			2.0
+		 * @desc			Singleton method - instantiates the class or returns an existing instance
+		 * @author			Scott Luther
+		 * @since			3.1
+		 * 
 		 * @ignore
 		 */
-		public function __get($name){
-			$name = ucfirst($name);
-			if(!class_exists($name)) {
-				$classname = '\Ipbwi\Ipbwi_'.$name;
-				$this->$name = new $classname($this);
-				return $this->$name;
+		public static function instance() {
+			if(!isset(self::$instance)) {
+				$class = __CLASS__;
+				self::$instance = new $class;
 			}
+			return self::$instance;
 		}
-
 		/**
-		 * @desc			Loads and checks different vars when class is initiating
-		 * @author			Matthias Reuter
-		 * @since			2.0
+		 * @desc			Bootstraps the class
+		 * @param	array	$config Array containing config info
+		 * @author			Scott Luther
+		 * @since			3.1
+		 * 
 		 * @ignore
 		 */
-		public function __construct($config){
-			// init config
-			$this->config = new Ipbwi_Config($config);
-			
+		public function init($config) {
+			Ipbwi_Config::instance()->set_config($config);
 			// check for DB prefix
-			if($this->config->db_prefix == ''){
-				$this->config->db_prefix = 'ipbwi_';
+			if(!isset($this->config->db_prefix) or $this->config->db_prefix == ''){
+				Ipbwi_Config::instance()->set_config(array('db_prefix' => 'ipbwi_'));
 			}
 			self::setLang($this->config);
-
 
 			// initialize IP.board Interface
 			if(file_exists($this->config->board_admin_path.'api/api_core.php') === true) {
 				require_once($this->config->board_admin_path.'api/api_core.php');
-				$this->ips_wrapper = new Ipbwi_IpsWrapper($this->config);
+				Ipbwi_IpsWrapper::instance()->init($this->config);
 				
 				// retrieve common vars
 				$this->board					= $this->ips_wrapper->settings;
@@ -91,7 +89,35 @@
 			} else {
 				die('<p><strong>Error:</strong> Board admin path is not correct: '.$this->config->board_admin_path.'</p>');
 			}
+			return self::$instance;
 		}
+
+		/**
+		 * @desc			Load's requested libraries dynamically
+		 * @param	string	$name library-name
+		 * @return			class object of the requested library
+		 * @author			Matthias Reuter
+		 * @since			2.0
+		 * @ignore
+		 */
+		public function __get($name){
+			if($name == 'ips_wrapper')
+			{
+				$name = 'ipswrapper';
+			}
+			$name = ucfirst($name);
+			if(!array_key_exists($name, $this->loaded_classes)) {
+				if(!class_exists($name)) {
+					$classname = '\Ipbwi\Ipbwi_'.$name;
+					$this->loaded_classes[$name] = $classname::instance($this);
+				}
+			}
+			return $this->loaded_classes[$name];
+		}
+
+		private function __construct() {
+		}
+		
 		public function __destruct() {
 		}
 		/**
@@ -101,13 +127,14 @@
 		 * @author			Matthias Reuter
 		 * @since			2.0
 		 */
-		public static function setLang($config){
+		public static function setLang($config) {
 			
-			if($config->lang == ''){
+			if($config->lang == '') {
 				$lang = 'en';
-			}else{
+			} else {
 				$lang = $config->lang;
 			}
+			
 			$libLang = array();
 			if(file_exists(__DIR__.'/ipbwi/lang/'.$lang.'.php')){
 				if(include(__DIR__.'/ipbwi/lang/'.$lang.'.php')){
@@ -121,7 +148,7 @@
 					if($config->overwrite_locale !== false){
 						$local = $config->overwrite_locale;
 					}
-					if($config->overwrite_encoding!== false){
+					if($config->overwrite_encoding !== false){
 						$encoding = $config->overwrite_encoding;
 					}
 					@setlocale(LC_ALL, "$local.$encoding");

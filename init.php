@@ -33,4 +33,4 @@ function autoload($class) {
 	}
 }
 spl_autoload_register('autoload', true, true);
-$ipbwi = new \Ipbwi\Ipbwi($config);
+$ipbwi = \Ipbwi\Ipbwi::instance()->init($config);

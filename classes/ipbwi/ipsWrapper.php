@@ -18,10 +18,19 @@ class Ipbwi_IpsWrapper extends \apiCore {
 	public	$registry;
 	public	$perm;
 	public	$parser;
+	private static $instance = null;
 	
-	public function __construct($config){
-		$this->init();
+	public static function instance() {
+		if(!isset(self::$instance)) {
+			$class = __CLASS__;
+			self::$instance = new $class;
+		}
 		
+		return self::$instance;
+	}
+	
+	public function init($config) {
+		parent::init();
 		$this->loggedIn					= (bool) $this->lang->memberData['member_id']; // status wether a member is logged in
 		$this->settings['base_url']		= $this->settings['board_url'].'?';
 		
@@ -70,7 +79,10 @@ class Ipbwi_IpsWrapper extends \apiCore {
 		// get member functions
 		//require_once(ipbwi_BOARD_ADMIN_PATH.'sources/classes/member/memberFunctions.php');
 		//$this->memberFunctions = new memberFunctions($this->registry);
-		
+		return self::$instance;
+	}
+	
+	public function __construct(){		
 	}
 	
 	public function memberDelete($id, $check_admin=false){

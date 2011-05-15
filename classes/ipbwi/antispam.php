@@ -16,6 +16,18 @@
 		private $uniqueId		= null;
 		private $recaptchaPrivateKey	= ipbwi_RECAPTCHA_PRIVATE_KEY;
 		private $recaptchaPublicKey		= ipbwi_RECAPTCHA_PUBLIC_KEY;
+		
+		private static $instance = null;
+	
+		public static function instance() {
+			if(!isset(self::$instance)) {
+				$class = __CLASS__;
+				self::$instance = new $class;
+			}
+			
+			return self::$instance;
+		}
+		
 		/**
 		 * @desc			Loads and checks different vars when class is initiating
 		 * @param	object	$ipbwi The ipbwi class object
