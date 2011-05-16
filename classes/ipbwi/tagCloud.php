@@ -9,7 +9,7 @@
 	 * @license			http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License
 	 */
 	namespace Ipbwi;
-	class Ipbwi_TagCloud extends Ipbwi {
+	class Ipbwi_TagCloud {
 		private $ipbwi			= null;
 		/**
 		 * @desc			Loads and checks different vars when class is initiating
@@ -19,11 +19,11 @@
 		 */
 		public function __construct($ipbwi){
 			// loads common classes
-			$this->ipbwi = $ipbwi;
+			Ipbwi::instance()-> = $ipbwi;
 
 			// create table if not exists
 			$sql_create = '
-			CREATE TABLE IF NOT EXISTS '.ipbwi_DB_prefix.'tagcloud (
+			CREATE TABLE IF NOT EXISTS '.$config->db_prefix.'tagcloud (
 				id int(10) NOT NULL auto_increment,
 				tag text character set utf8 collate utf8_unicode_ci NOT NULL,
 				destination text character set utf8 collate utf8_unicode_ci NOT NULL,
@@ -33,7 +33,7 @@
 				PRIMARY KEY (id)
 			) ENGINE=MyISAM DEFAULT CHARSET=latin1 ;';
 
-			$this->ipbwi->ips_wrapper->DB->query($sql_create);
+			Ipbwi_IpsWrapper::instance()->DB->query($sql_create);
 		}
 		/**
 		 * @desc			Creates a tag cloud
@@ -53,11 +53,11 @@
 			if(isset($category) && $category != ''){
 				$category = ' WHERE category = "'.$category.'"';
 			}
-			$query = $this->ipbwi->ips_wrapper->DB->query('SELECT * from '.ipbwi_DB_prefix.'tagcloud'.$category);
-			if($this->ipbwi->ips_wrapper->DB->getTotalRows($query) == 0){
+			$query = Ipbwi_IpsWrapper::instance()->DB->query('SELECT * from '.$config->db_prefix.'tagcloud'.$category);
+			if(Ipbwi_IpsWrapper::instance()->DB->getTotalRows($query) == 0){
 				return false;
 			}
-			while($row = $this->ipbwi->ips_wrapper->DB->fetch($query)){
+			while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($query)){
 				if(empty($cloud[$row['tag']])){
 					$cloud[$row['tag']] = 1;
 				}
@@ -102,12 +102,12 @@
 		 * @since			2.0
 		 */
 		public function getTagData($tag){
-			$query = $this->ipbwi->ips_wrapper->DB->query('SELECT * from '.ipbwi_DB_prefix.'tagcloud WHERE tag="'.$tag.'"');
-			if($this->ipbwi->ips_wrapper->DB->getTotalRows($query) == 0){
+			$query = Ipbwi_IpsWrapper::instance()->DB->query('SELECT * from '.$config->db_prefix.'tagcloud WHERE tag="'.$tag.'"');
+			if(Ipbwi_IpsWrapper::instance()->DB->getTotalRows($query) == 0){
 				return false;
 			}
 			$data = '';
-			while($row = $this->ipbwi->ips_wrapper->DB->fetch($query)){
+			while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($query)){
 				$data[] = $row;
 			}
 			return $data;
@@ -125,12 +125,12 @@
 		 * @since			2.0
 		 */
 		public function getTagList($topicID){
-			$query = $this->ipbwi->ips_wrapper->DB->query('SELECT * FROM '.ipbwi_DB_prefix.'tagcloud WHERE tid="'.intval($topicID).'"');
-			if($this->ipbwi->ips_wrapper->DB->getTotalRows($query) == 0){
+			$query = Ipbwi_IpsWrapper::instance()->DB->query('SELECT * FROM '.$config->db_prefix.'tagcloud WHERE tid="'.intval($topicID).'"');
+			if(Ipbwi_IpsWrapper::instance()->DB->getTotalRows($query) == 0){
 				return false;
 			}
 			$data = array();
-			while($row = $this->ipbwi->ips_wrapper->DB->fetch($query)){
+			while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($query)){
 				$data[] = $row;
 			}
 			return $data;
@@ -146,12 +146,12 @@
 		 * @since			2.01
 		 */
 		public function getCategoryList(){
-			$query = $this->ipbwi->ips_wrapper->DB->query('SELECT DISTINCT category FROM '.ipbwi_DB_prefix.'tagcloud');
-			if($this->ipbwi->ips_wrapper->DB->getTotalRows($query) == 0){
+			$query = Ipbwi_IpsWrapper::instance()->DB->query('SELECT DISTINCT category FROM '.$config->db_prefix.'tagcloud');
+			if(Ipbwi_IpsWrapper::instance()->DB->getTotalRows($query) == 0){
 				return false;
 			}
 			$data = array();
-			while($row = $this->ipbwi->ips_wrapper->DB->fetch($query)){
+			while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($query)){
 				$data[] = $row['category'];
 			}
 			return $data;
@@ -174,11 +174,11 @@
 		 */
 		public function addTag($tag,$destination,$topicID=false,$title=false,$category='default'){
 			if($tag == '' || !is_string($tag)){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('badTag'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('badTag'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			if($destination == '' || !is_string($destination)){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('badDestination'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('badDestination'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			if(intval($topicID) > 0){
@@ -191,7 +191,7 @@
 			}else{
 				$title = 'NULL';
 			}
-			$this->ipbwi->ips_wrapper->DB->query('INSERT INTO '.ipbwi_DB_prefix.'tagcloud (tag,destination,tid,title,category) VALUES("'.$tag.'","'.$destination.'",'.$topicID.','.$title.',"'.$category.'")');
+			Ipbwi_IpsWrapper::instance()->DB->query('INSERT INTO '.$config->db_prefix.'tagcloud (tag,destination,tid,title,category) VALUES("'.$tag.'","'.$destination.'",'.$topicID.','.$title.',"'.$category.'")');
 			return true;
 		}
 		/**
@@ -207,10 +207,10 @@
 		 */
 		public function deleteTag($tagID){
 			if($tagID == '' || intval($tagID) == 0 || !is_int(intval($tagID))){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('badTagID'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('badTagID'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
-			$this->ipbwi->ips_wrapper->DB->query('DELETE FROM '.ipbwi_DB_prefix.'tagcloud WHERE id="'.$tagID.'"');
+			Ipbwi_IpsWrapper::instance()->DB->query('DELETE FROM '.$config->db_prefix.'tagcloud WHERE id="'.$tagID.'"');
 			return true;
 		}
 	}

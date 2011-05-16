@@ -9,7 +9,7 @@
 	 * @license			http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License
 	 */
 	namespace Ipbwi;
-	class Ipbwi_Skin extends Ipbwi {
+	class Ipbwi_Skin {
 		public $emoURL			= false;
 		private $ipbwi			= null;
 		/**
@@ -20,9 +20,9 @@
 		 */
 		public function __construct($ipbwi){
 			// loads common classes
-			$this->ipbwi = $ipbwi;
+			Ipbwi::instance()-> = $ipbwi;
 			
-			$this->emoURL	= str_replace('<#EMO_DIR#>',$this->emoDir(),$this->ipbwi->ips_wrapper->settings['emoticons_url']);
+			$this->emoURL	= str_replace('<#EMO_DIR#>',$this->emoDir(),Ipbwi_IpsWrapper::instance()->settings['emoticons_url']);
 		}
 		/**
 		 * @desc			Returns the Skin ID of the skin used by a member.
@@ -36,12 +36,12 @@
 		 * @since			2.0
 		 */
 		public function id($memberID = false){
-			$member = $this->ipbwi->member->info(); // get user info...
+			$member = Ipbwi::instance()->member->info(); // get user info...
 			if(isset($member['skin']) && $member['skin'] != '' && $member['skin'] != 0){
 				return $member['skin'];
 			}else{
-				$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT set_id FROM '.$this->ipbwi->board['sql_tbl_prefix'].'skin_collections WHERE set_is_default = "1"');
-				if($row = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+				$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT set_id FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'skin_collections WHERE set_is_default = "1"');
+				if($row = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 					return $row['set_id'];
 				}else{
 					return false;
@@ -61,8 +61,8 @@
 		 */
 		public function info($skinID){
 			if($skinID >= 0){ // If they've specified a skin
-				$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT * FROM '.$this->ipbwi->board['sql_tbl_prefix'].'skin_collections WHERE set_id="'.$skinID.'"');
-				if($row = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+				$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT * FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'skin_collections WHERE set_id="'.$skinID.'"');
+				if($row = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 					return $row;
 				}else{
 					return false;
@@ -82,7 +82,7 @@
 		 * @since			2.0
 		 */
 		public function emoDir(){
-			$member = $this->ipbwi->member->info(); // get user info...
+			$member = Ipbwi::instance()->member->info(); // get user info...
 			if(isset($member['skin']) && $member['skin'] != '' && intval($member['skin']) > 0){ // for guests or if no skin is set...
 				$skinID		= $member['skin']; // ...for skin id
 				$default	= false; // ...make it the default skin
@@ -91,8 +91,8 @@
 				$default	= true;
 			}
 			
-			$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT set_emo_dir FROM '.$this->ipbwi->board['sql_tbl_prefix'].'skin_collections WHERE '.(($default === true) ? 'set_key = "default"' : 'set_id = '.$skinID));
-			$emodir = $this->ipbwi->ips_wrapper->DB->fetch($sql);
+			$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT set_emo_dir FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'skin_collections WHERE '.(($default === true) ? 'set_key = "default"' : 'set_id = '.$skinID));
+			$emodir = Ipbwi_IpsWrapper::instance()->DB->fetch($sql);
 			return $emodir['set_emo_dir'].'/';
 		}
 		/**
@@ -107,7 +107,7 @@
 		 * @since			2.0
 		 */
 		public function css(){
-			$member = $this->ipbwi->member->info(); // get user info...
+			$member = Ipbwi::instance()->member->info(); // get user info...
 			
 			if(isset($member['skin']) && $member['skin'] != '' && $member['skin'] != 0){ // for guests or if no skin is set...
 				$skinID		= $member['skin']; // ...for skin id
@@ -118,8 +118,8 @@
 			}
 			
 			// get css groups
-			$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT set_css_groups,set_image_dir FROM '.$this->ipbwi->board['sql_tbl_prefix'].'skin_collections WHERE '.(($default === true) ? ('set_is_default = "1"') : (' set_id = '.$skinID)));
-			$skin = $this->ipbwi->ips_wrapper->DB->fetch($sql);
+			$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT set_css_groups,set_image_dir FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'skin_collections WHERE '.(($default === true) ? ('set_is_default = "1"') : (' set_id = '.$skinID)));
+			$skin = Ipbwi_IpsWrapper::instance()->DB->fetch($sql);
 			$CSSgroups = unserialize($skin['set_css_groups']);
 			$c = count($CSSgroups);
 			$i = 1;
@@ -137,9 +137,9 @@
 			}
 			
 			// get CSS fields from DB
-			$query = 'SELECT * FROM '.$this->ipbwi->board['sql_tbl_prefix'].'skin_css '.$CSSids['list'].' ORDER BY css_position ASC';
-			$sql = $this->ipbwi->ips_wrapper->DB->query($query);
-			while($entry = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+			$query = 'SELECT * FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'skin_css '.$CSSids['list'].' ORDER BY css_position ASC';
+			$sql = Ipbwi_IpsWrapper::instance()->DB->query($query);
+			while($entry = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 				$style[$entry['css_group']]	= str_replace('{style_images_url}', $skin['set_image_dir'], $entry['css_content']);
 			}
 			return $style;
@@ -156,9 +156,9 @@
 		 */
 		public function getList(){
 			// Grab all skins which aren't hidden
-			$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT set_id FROM '.$this->ipbwi->board['sql_tbl_prefix'].'skin_collections WHERE set_hide_from_list="0"');
+			$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT set_id FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'skin_collections WHERE set_hide_from_list="0"');
 			$skins = array();
-			while($row = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+			while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 				$skins[] = $row['set_id'];
 			}
 			return $skins;
@@ -179,14 +179,14 @@
 			// Check it exists
 			if($this->info($skinID)){
 				// Grab current member id unless specified
-				$member = $this->ipbwi->member->info(); // get user info...
-				if($this->ipbwi->member->updateMember(array('skin' => $skinID), $member['member_id'])){
+				$member = Ipbwi::instance()->member->info(); // get user info...
+				if(Ipbwi::instance()->member->updateMember(array('skin' => $skinID), $member['member_id'])){
 					return true;
 				}else{
 					return false;
 				}
 			}else{
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('skinNotExist'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('skinNotExist'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 		}

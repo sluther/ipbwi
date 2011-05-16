@@ -10,17 +10,42 @@
 	 * @ignore
 	 */
 	namespace Ipbwi;
-	class Ipbwi_Cache extends Ipbwi {
-		private $ipbwi			= null;
-		private $data			= array();
+	class Ipbwi_Cache {
+		private $data			 = array();
+		private static $instance = null;
+	
 		/**
-		 * @desc			Loads and checks different vars when class is initiating
-		 * @author			Matthias Reuter
-		 * @since			2.0
+		 * @desc			Singleton method - instantiates the class or returns an existing instance
+		 * @author			Scott Luther
+		 * @since			3.1
+		 * 
+		 * @ignore
 		 */
-		public function __construct($ipbwi){
-			// loads common classes
-			$this->ipbwi = $ipbwi;
+		
+		public static function instance() {
+			if(!isset(self::$instance)) {
+				$class = __CLASS__;
+				self::$instance = new $class;
+			}
+			return self::$instance;
+		}
+		
+		/**
+		 * @desc			Inits the class, setting up vars
+		 * @param	object	$config object containing config
+		 * @return	object	instance of class
+		 * @author			Scott Luther
+		 * @since			3.1
+		 * 
+		 * @ignore
+		 */
+		
+		public function init($config) {
+			return self::$instance;
+		}
+		
+		private function __construct(){
+
 		}
 		/**
 		 * @desc			Gets function results cache.
@@ -37,6 +62,7 @@
 				return false;
 			}
 		}
+		
 		/**
 		 * @desc			Saves/Updates function results cache.
 		 * @param	string	$function API Method who's query results have been cached
@@ -92,9 +118,9 @@
 				return $cache;
 			}
 			else{
-				$this->ipbwi->ips_wrapper->DB->query('SELECT cs_key, cs_value, cs_extra FROM '.$this->ipbwi->board['sql_tbl_prefix'].'cache_store');
+				Ipbwi_IpsWrapper::instance()->DB->query('SELECT cs_key, cs_value, cs_extra FROM '.$this->board['sql_tbl_prefix'].'cache_store');
 				$cs = array();
-				while($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+				while($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 					$cs[$row['cs_key']] = $row;
 				}
 				$this->save('listCacheStores', '1', $cs);
@@ -128,8 +154,8 @@
 			$cs = $this->listStores();
 			if($cs[$key]){
 				// Already exists so just use UPDATE
-				$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'cache_store SET cs_value="'.$value.'", cs_extra="'.(time()+86400).'" WHERE cs_key="'.$key.'"');
-				if($this->ipbwi->ips_wrapper->DB->get_affected_rows()){
+				Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.$this->board['sql_tbl_prefix'].'cache_store SET cs_value="'.$value.'", cs_extra="'.(time()+86400).'" WHERE cs_key="'.$key.'"');
+				if(Ipbwi_IpsWrapper::instance()->DB->get_affected_rows()){
 					// And update our cached copy
 					$cs[$key] = array('cs_key' => $key,
 						'cs_value' => $value,
@@ -142,8 +168,8 @@
 				}
 			}else{
 				// Doesn't exist so use INSERT
-				$this->ipbwi->ips_wrapper->DB->query('INSERT INTO '.$this->ipbwi->board['sql_tbl_prefix'].'cache_store (cs_key, cs_value, cs_extra) VALUES ("'.$key.'", "'.$value.'", "'.(time()+86400).'")');
-				if($this->ipbwi->ips_wrapper->DB->get_affected_rows()){
+				Ipbwi_IpsWrapper::instance()->DB->query('INSERT INTO '.$this->board['sql_tbl_prefix'].'cache_store (cs_key, cs_value, cs_extra) VALUES ("'.$key.'", "'.$value.'", "'.(time()+86400).'")');
+				if(Ipbwi_IpsWrapper::instance()->DB->get_affected_rows()){
 					// And update our cached copy
 					$cs[$key] = array('cs_key' => $key,
 						'cs_value' => $value,
@@ -167,12 +193,12 @@
 		public function searchStore($value, $exactmatch = FALSE){
 			// Do the SQL Query
 			if($exactmatch){
-				$this->ipbwi->ips_wrapper->DB->query('SELECT * FROM '.$this->ipbwi->board['sql_tbl_prefix'].'cache_store WHERE cs_value="'.$value.'"');
+				Ipbwi_IpsWrapper::instance()->DB->query('SELECT * FROM '.$this->board['sql_tbl_prefix'].'cache_store WHERE cs_value="'.$value.'"');
 			}else{
-				$this->ipbwi->ips_wrapper->DB->query('SELECT * FROM '.$this->ipbwi->board['sql_tbl_prefix'].'cache_store WHERE cs_value LIKE "%'.$value.'%"');
+				Ipbwi_IpsWrapper::instance()->DB->query('SELECT * FROM '.$this->board['sql_tbl_prefix'].'cache_store WHERE cs_value LIKE "%'.$value.'%"');
 			}
 			$cs = array();
-			while($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+			while($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 				$cs[$row['cs_key']] = $row;
 			}
 			return $cs;
@@ -193,12 +219,12 @@
 				$count['posts'] = 0;
 			}
 			// grab data from new latest post in forum
-			$topic = $this->ipbwi->topic->getList($forumID,array('limit' => 1,'orderby' => 'last_post'));
+			$topic = $this->topic->getList($forumID,array('limit' => 1,'orderby' => 'last_post'));
 			// Finally update the forum
 			if($topic != false){
 				foreach($topic as $lastTopicInfo){
 					$query = '
-						UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'forums SET
+						UPDATE '.$this->board['sql_tbl_prefix'].'forums SET
 						posts=posts+'.$count['posts'].',
 						topics=topics+'.$count['topics'].',
 						last_title="'.$lastTopicInfo['title'].'",
@@ -211,7 +237,7 @@
 						WHERE id="'.$forumID.'"';
 				}
 			}
-			if($this->ipbwi->ips_wrapper->DB->query($query)
+			if(Ipbwi_IpsWrapper::instance()->DB->query($query)
 			){
 				return true;
 			}else{
@@ -227,12 +253,12 @@
 		 */
 		public function updatePM($ownerID){
 			$ownerID = intval($ownerID);
-			$folders = $this->ipbwi->pm->getFolders();
+			$folders = $this->pm->getFolders();
 			foreach($folders as $folder){
 			
-				$sql = 'SELECT COUNT(t.mt_id) AS count FROM '.$this->ipbwi->board['sql_tbl_prefix'].'message_topics t LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'message_topic_user_map m ON (m.map_topic_id=t.mt_id) WHERE m.map_folder_id="'.$folder['id'].'" AND m.map_user_id="'.$ownerID.'"';
-				$query = $this->ipbwi->ips_wrapper->DB->query($sql);
-				if($message = $this->ipbwi->ips_wrapper->DB->fetch($query)){
+				$sql = 'SELECT COUNT(t.mt_id) AS count FROM '.$this->board['sql_tbl_prefix'].'message_topics t LEFT JOIN '.$this->board['sql_tbl_prefix'].'message_topic_user_map m ON (m.map_topic_id=t.mt_id) WHERE m.map_folder_id="'.$folder['id'].'" AND m.map_user_id="'.$ownerID.'"';
+				$query = Ipbwi_IpsWrapper::instance()->DB->query($sql);
+				if($message = Ipbwi_IpsWrapper::instance()->DB->fetch($query)){
 					if(($folder['id'] != 'myconvo' || $folder['id'] != 'drafts' || $folder['id'] != 'new') && $folder['real'] == ''){
 					
 					}else{
@@ -275,7 +301,7 @@
 				$count['drafts']['count']		= 0;
 			}
 		
-			if($this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'profile_portal SET pconversation_filters="'.addslashes(serialize($count)).'" WHERE pp_member_id="'.$this->ipbwi->member->myInfo['member_id'].'" LIMIT 1')){
+			if(Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.$this->board['sql_tbl_prefix'].'profile_portal SET pconversation_filters="'.addslashes(serialize($count)).'" WHERE pp_member_id="'.$this->member->myInfo['member_id'].'" LIMIT 1')){
 				return true;
 			}else{
 				return false;

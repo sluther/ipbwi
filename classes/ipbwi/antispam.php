@@ -9,14 +9,13 @@
 	 * @license			http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License
 	 */
 	namespace Ipbwi;
-	class Ipbwi_Antispam extends Ipbwi {
+	class Ipbwi_Antispam {
 		private $ipbwi			= null;
 		private $captchaClass	= null;
 		private $captcha		= null;
 		private $uniqueId		= null;
 		private $recaptchaPrivateKey	= ipbwi_RECAPTCHA_PRIVATE_KEY;
 		private $recaptchaPublicKey		= ipbwi_RECAPTCHA_PUBLIC_KEY;
-		
 		private static $instance = null;
 	
 		public static function instance() {
@@ -35,23 +34,20 @@
 		 * @since			2.0
 		 * @ignore
 		 */
-		public function __construct($ipbwi){
-			// loads common classes
-			$this->ipbwi = $ipbwi;
-
+		public function __construct(){
 			// loads recaptcha lib
 			require_once(ipbwi_ROOT_PATH.'lib/third_party/recaptchalib.inc.php');
 
 			// loads IP.Board Captcha Class
 			require_once(ipbwi_BOARD_PATH.'ips_kernel/classCaptcha.php');
-			$this->captcha	= new classCaptcha($this->ipbwi->ips_wrapper->registry,$this->ipbwi->ips_wrapper->settings['bot_antispam_type']);
+			$this->captcha	= new classCaptcha(Ipbwi_IpsWrapper::instance()->registry,Ipbwi_IpsWrapper::instance()->settings['bot_antispam_type']);
 
 			// if the captcha mode is auto, and the board uses recaptcha we have
 			// to use the public and private key that is set in the board
 			if(ipbwi_CAPTCHA_MODE == 'auto'){
-				if($this->ipbwi->ips_wrapper->settings['bot_antispam_type'] == 'recaptcha'){
-					$this->recaptchaPrivateKey	= $this->ipbwi->ips_wrapper->settings['recaptcha_private_key'];
-					$this->recaptchaPublicKey	= $this->ipbwi->ips_wrapper->settings['recaptcha_public_key'];
+				if(Ipbwi_IpsWrapper::instance()->settings['bot_antispam_type'] == 'recaptcha'){
+					$this->recaptchaPrivateKey	= Ipbwi_IpsWrapper::instance()->settings['recaptcha_private_key'];
+					$this->recaptchaPublicKey	= Ipbwi_IpsWrapper::instance()->settings['recaptcha_public_key'];
 				}
 			}
 		}
@@ -74,9 +70,9 @@
 				return $this->getRecaptchaHtml();
 				break;
 			case 'auto':
-				if($this->ipbwi->ips_wrapper->settings['bot_antispam_type'] == 'recaptcha'){
+				if(Ipbwi_IpsWrapper::instance()->settings['bot_antispam_type'] == 'recaptcha'){
 					return $this->getRecaptchaHtml();
-				}elseif($this->ipbwi->ips_wrapper->settings['bot_antispam_type'] == 'none'){
+				}elseif(Ipbwi_IpsWrapper::instance()->settings['bot_antispam_type'] == 'none'){
 					return;
 				}else{
 					return $this->getGdHtml($ajaxUrl);
@@ -118,7 +114,7 @@
 			$uniqueId		= $this->createUniqueId();
 			$this->uniqueId	= $uniqueId;
 			// Save the new captcha data in Database
-			$this->ipbwi->ips_wrapper->DB->insert('captcha', array('captcha_unique_id' => $uniqueId, 'captcha_string' => $captchaString, 'captcha_ipaddress' => $_SERVER['REMOTE_ADDR'], 'captcha_date' => time()));
+			Ipbwi_IpsWrapper::instance()->DB->insert('captcha', array('captcha_unique_id' => $uniqueId, 'captcha_string' => $captchaString, 'captcha_ipaddress' => $_SERVER['REMOTE_ADDR'], 'captcha_date' => time()));
 			return $uniqueId;
 		}
 		/**
@@ -148,8 +144,8 @@
 		 */
 		private function validateGd($uniqueId, $userCaptchaString){
 			// Get the correct Captcha String from the database, using the unique id
-			$this->ipbwi->ips_wrapper->DB->query('SELECT captcha_string FROM '.$this->ipbwi->board['sql_tbl_prefix'].'captcha WHERE captcha_unique_id="'.addslashes($uniqueId).'"');
-			$row = $this->ipbwi->ips_wrapper->DB->fetch();
+			Ipbwi_IpsWrapper::instance()->DB->query('SELECT captcha_string FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'captcha WHERE captcha_unique_id="'.addslashes($uniqueId).'"');
+			$row = Ipbwi_IpsWrapper::instance()->DB->fetch();
 			if(isset($row) && !empty($row)){
 				// Is not case sesetive! Maybe change later?
 				if(strtoupper($row['captcha_string']) == strtoupper($userCaptchaString)){
@@ -158,7 +154,7 @@
 					return true;
 				}else{
 					// Captcha was not correct! Report the error
-					$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('badKey'),'Located in file '.__FILE__.' at class '.__CLASS__.' in function '.'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('badKey'),'Located in file '.__FILE__.' at class '.__CLASS__.' in function '.'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					return false;
 				}
 			}else{
@@ -205,7 +201,7 @@
 				xmlHttp.onreadystatechange = function (){
 					if(xmlHttp.readyState == 4){
 						keycode_id = xmlHttp.responseText;
-						document.getElementById("anti_spam_image").src = unescape('{$this->ipbwi->getBoardVar('url')}index.php%3Fapp%3Dcore%26module%3Dglobal%26section%3Dcaptcha&do%3Dshowimage%26captcha_unique_id%3D') + keycode_id;
+						document.getElementById("anti_spam_image").src = unescape('{Ipbwi::instance()->getBoardVar('url')}index.php%3Fapp%3Dcore%26module%3Dglobal%26section%3Dcaptcha&do%3Dshowimage%26captcha_unique_id%3D') + keycode_id;
 						document.getElementById("anti_spam_session_id").value = keycode_id;
 					}
 				}
@@ -216,7 +212,7 @@
 AJAXCODE;
 				$ajaxLink = ' onclick="get_new_hash();" style="cursor:pointer;" title="Click here to refresh Spam-Image"';
 			}
-			$html	 =	'<p>'.$ajaxCode.'<img'.$ajaxLink.' src="'.$this->ipbwi->getBoardVar('url').'index.php?app=core&module=global&section=captcha&do=showimage&captcha_unique_id='.$uniqueId.'" alt="Code Bit" id="anti_spam_image" /></p>';
+			$html	 =	'<p>'.$ajaxCode.'<img'.$ajaxLink.' src="'.Ipbwi::instance()->getBoardVar('url').'index.php?app=core&module=global&section=captcha&do=showimage&captcha_unique_id='.$uniqueId.'" alt="Code Bit" id="anti_spam_image" /></p>';
 			$html	.=	'<p><input type="hidden" name="ipbwiCaptchaUniqueId" value="'.$this->uniqueId.'" id="anti_spam_session_id" /></p>';
 			$html	.=	'<p><strong>Insert Code</strong></p>';
 			$html	.=	'<p><input type="text" name="ipbwiCaptchaString" value="" id="keycode" /></p>';
@@ -232,7 +228,7 @@ AJAXCODE;
 		private function clearGdDatabase(){
 			$time  = time() - 60*3600;
 			// Delete all old entries and the seassion of the actual user
-			$this->ipbwi->ips_wrapper->DB->query('DELETE FROM '.$this->ipbwi->board['sql_tbl_prefix'].'captcha WHERE captcha_date < "'.$time.'" OR captcha_ipaddress = "'.$_SERVER['REMOTE_ADDR'].'"');
+			Ipbwi_IpsWrapper::instance()->DB->query('DELETE FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'captcha WHERE captcha_date < "'.$time.'" OR captcha_ipaddress = "'.$_SERVER['REMOTE_ADDR'].'"');
 			return true;
 		}
 		/**

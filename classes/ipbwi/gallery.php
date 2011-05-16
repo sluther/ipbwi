@@ -9,7 +9,7 @@
 	 * @license			http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License
 	 */
 	namespace Ipbwi;
-	class Ipbwi_Gallery extends Ipbwi {
+	class Ipbwi_Gallery {
 		private $ipbwi			= null;
 		public $installed		= false;
 		public $url				= false;
@@ -22,12 +22,12 @@
 		 */
 		public function __construct($ipbwi){
 			// loads common classes
-			$this->ipbwi = $ipbwi;
+			Ipbwi::instance()-> = $ipbwi;
 
 			// check if IP.gallery is installed
-			$query = $this->ipbwi->ips_wrapper->DB->query('SELECT conf_value,conf_default FROM '.$this->ipbwi->board['sql_tbl_prefix'].'core_sys_conf_settings WHERE conf_key="gallery_images_url"');
-			if($this->ipbwi->ips_wrapper->DB->getTotalRows($query) != 0){
-				$data = $this->ipbwi->ips_wrapper->DB->fetch($query);
+			$query = Ipbwi_IpsWrapper::instance()->DB->query('SELECT conf_value,conf_default FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'core_sys_conf_settings WHERE conf_key="gallery_images_url"');
+			if(Ipbwi_IpsWrapper::instance()->DB->getTotalRows($query) != 0){
+				$data = Ipbwi_IpsWrapper::instance()->DB->fetch($query);
 				// retrieve Gallery URL
 				$this->url = (($data['conf_value'] != '') ? $data['conf_value'] : $data['conf_default']).'/';
 				$this->installed = true;
@@ -45,17 +45,17 @@
 		 * @since			2.0
 		 */
 		public function getViewable(){
-			if($cache = $this->ipbwi->cache->get('galleryGetViewable', $this->ipbwi->member->myInfo['member_id'])){
+			if($cache = Ipbwi::instance()->cache->get('galleryGetViewable', Ipbwi::instance()->member->myInfo['member_id'])){
 				return $cache;
 			}else{
-				$this->ipbwi->ips_wrapper->DB->query('SELECT * FROM '.$this->ipbwi->board['sql_tbl_prefix'].'gallery_categories');
+				Ipbwi_IpsWrapper::instance()->DB->query('SELECT * FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'gallery_categories');
 				$cats = array();
-				while($row = $this->ipbwi->ips_wrapper->DB->fetch()){
-					if($this->ipbwi->group->isInGroup($row['perms_view'])){
+				while($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
+					if(Ipbwi::instance()->group->isInGroup($row['perms_view'])){
 						$cats[$row['id']] = $row['id'];
 					}
 				}
-				$this->ipbwi->cache->save('galleryGetViewable', $this->ipbwi->member->myInfo['member_id'], $cats);
+				Ipbwi::instance()->cache->save('galleryGetViewable', Ipbwi::instance()->member->myInfo['member_id'], $cats);
 				return $cats;
 			}
 		}
@@ -93,15 +93,15 @@
 				}
 
 				// get latest images
-				$query = $this->ipbwi->ips_wrapper->DB->query('SELECT * FROM '.$this->ipbwi->board['sql_tbl_prefix'].'gallery_images WHERE approved="1"'.$catquery.$fromMember.' ORDER BY id DESC LIMIT '.intval($settings['start']).','.intval($settings['limit']));
-				if($this->ipbwi->ips_wrapper->DB->getTotalRows($query) == 0){
+				$query = Ipbwi_IpsWrapper::instance()->DB->query('SELECT * FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'gallery_images WHERE approved="1"'.$catquery.$fromMember.' ORDER BY id DESC LIMIT '.intval($settings['start']).','.intval($settings['limit']));
+				if(Ipbwi_IpsWrapper::instance()->DB->getTotalRows($query) == 0){
 					return false;
 				}
 				$data = array();
-				while($row = $this->ipbwi->ips_wrapper->DB->fetch($query)){
-					$row['caption']			= $this->ipbwi->properXHTML($this->ipbwi->bbcode->bbcode2html($this->ipbwi->bbcode->html2bbcode($row['caption']),false));
-					$row['description']		= $this->ipbwi->properXHTML($this->ipbwi->bbcode->bbcode2html($this->ipbwi->bbcode->html2bbcode($row['description']),false));
-					$row['copyright']		= $this->ipbwi->properXHTML($this->ipbwi->bbcode->bbcode2html($this->ipbwi->bbcode->html2bbcode($row['copyright']),false));
+				while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($query)){
+					$row['caption']			= Ipbwi::instance()->properXHTML(Ipbwi::instance()->bbcode->bbcode2html(Ipbwi::instance()->bbcode->html2bbcode($row['caption']),false));
+					$row['description']		= Ipbwi::instance()->properXHTML(Ipbwi::instance()->bbcode->bbcode2html(Ipbwi::instance()->bbcode->html2bbcode($row['description']),false));
+					$row['copyright']		= Ipbwi::instance()->properXHTML(Ipbwi::instance()->bbcode->bbcode2html(Ipbwi::instance()->bbcode->html2bbcode($row['copyright']),false));
 					$data[] = $row;
 				}
 				return $data;
@@ -164,17 +164,17 @@
 							$output[$i['id']]['name'] = $indent.$i['name'];
 						}
 						// grab all subforums from each delivered cat-id
-						if($subqery = $this->ipbwi->ips_wrapper->DB->query('SELECT '.$select.' FROM '.$this->ipbwi->board['sql_tbl_prefix'].'gallery_categories WHERE parent = '.$i['id'].' ORDER BY c_order ASC')){
+						if($subqery = Ipbwi_IpsWrapper::instance()->DB->query('SELECT '.$select.' FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'gallery_categories WHERE parent = '.$i['id'].' ORDER BY c_order ASC')){
 							// extend indent-string
 							$indent = $indent.$indentString;
 							// get all subforums in an array
-							while($row = $this->ipbwi->ips_wrapper->DB->fetch($subqery)){
+							while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($subqery)){
 								if($outputType == 'array_ids_only'){
 									$subforums[$row['id']] = $row['id'];
 								}else{
-									$row['last_pic_name'] = $this->ipbwi->properXHTML($row['last_pic_name']);
-									$row['name'] = $this->ipbwi->properXHTML($row['name']);
-									$row['description'] = $this->ipbwi->properXHTML($row['description']);
+									$row['last_pic_name'] = Ipbwi::instance()->properXHTML($row['last_pic_name']);
+									$row['name'] = Ipbwi::instance()->properXHTML($row['name']);
+									$row['description'] = Ipbwi::instance()->properXHTML($row['description']);
 									$subforums[] = $row;
 								}
 							}
@@ -215,18 +215,18 @@
 		 */
 		public function catList(){
 			if($this->installed === true){
-				if($cache = $this->ipbwi->cache->get('listGalleryCategories', '1')){
+				if($cache = Ipbwi::instance()->cache->get('listGalleryCategories', '1')){
 					return $cache;
 				}else{
-					$this->ipbwi->ips_wrapper->DB->query('SELECT * FROM '.$this->ipbwi->board['sql_tbl_prefix'].'gallery_categories WHERE parent = "0"');
+					Ipbwi_IpsWrapper::instance()->DB->query('SELECT * FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'gallery_categories WHERE parent = "0"');
 					$cat = array();
-					while($row = $this->ipbwi->ips_wrapper->DB->fetch()){
-						$row['last_pic_name'] = $this->ipbwi->properXHTML($row['last_pic_name']);
-						$row['name'] = $this->ipbwi->properXHTML($row['name']);
-						$row['description'] = $this->ipbwi->properXHTML($row['description']);
+					while($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
+						$row['last_pic_name'] = Ipbwi::instance()->properXHTML($row['last_pic_name']);
+						$row['name'] = Ipbwi::instance()->properXHTML($row['name']);
+						$row['description'] = Ipbwi::instance()->properXHTML($row['description']);
 						$cat[$row['id']] = $row;
 					}
-					$this->ipbwi->cache->save('listGalleryCategories', '1', $cat);
+					Ipbwi::instance()->cache->save('listGalleryCategories', '1', $cat);
 					return $cat;
 				}
 			}else{
@@ -237,15 +237,15 @@
 		public function info($imgID){
 			if($this->installed === true){
 				// get image info
-				$query = $this->ipbwi->ips_wrapper->DB->query('SELECT * FROM '.$this->ipbwi->board['sql_tbl_prefix'].'gallery_images WHERE id="'.intval($imgID).'"');
-				if($this->ipbwi->ips_wrapper->DB->getTotalRows($query) == 0){
+				$query = Ipbwi_IpsWrapper::instance()->DB->query('SELECT * FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'gallery_images WHERE id="'.intval($imgID).'"');
+				if(Ipbwi_IpsWrapper::instance()->DB->getTotalRows($query) == 0){
 					return false;
 				}
 				$data = array();
-				while($row = $this->ipbwi->ips_wrapper->DB->fetch($query)){
-					$row['caption']			= $this->ipbwi->properXHTML($this->ipbwi->bbcode->bbcode2html($this->ipbwi->bbcode->html2bbcode($row['caption']),false));
-					$row['description']		= $this->ipbwi->properXHTML($this->ipbwi->bbcode->bbcode2html($this->ipbwi->bbcode->html2bbcode($row['description']),false));
-					$row['copyright']		= $this->ipbwi->properXHTML($this->ipbwi->bbcode->bbcode2html($this->ipbwi->bbcode->html2bbcode($row['copyright']),false));
+				while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($query)){
+					$row['caption']			= Ipbwi::instance()->properXHTML(Ipbwi::instance()->bbcode->bbcode2html(Ipbwi::instance()->bbcode->html2bbcode($row['caption']),false));
+					$row['description']		= Ipbwi::instance()->properXHTML(Ipbwi::instance()->bbcode->bbcode2html(Ipbwi::instance()->bbcode->html2bbcode($row['description']),false));
+					$row['copyright']		= Ipbwi::instance()->properXHTML(Ipbwi::instance()->bbcode->bbcode2html(Ipbwi::instance()->bbcode->html2bbcode($row['copyright']),false));
 					$data = $row;
 				}
 				return $data;

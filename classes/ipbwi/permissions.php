@@ -9,17 +9,46 @@
 	 * @license			http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License
 	 */
 	namespace Ipbwi;
-	class Ipbwi_Permissions extends Ipbwi {
-		private $ipbwi			= null;
+	class Ipbwi_Permissions {
+		private static $instance 	= null;
+	
+		/**
+		 * @desc			Singleton method - instantiates the class or returns an existing instance
+		 * @author			Scott Luther
+		 * @since			3.1
+		 * 
+		 * @ignore
+		 */
+		
+		public static function instance() {
+			if(!isset(self::$instance)) {
+				$class = __CLASS__;
+				self::$instance = new $class;
+			}
+			return self::$instance;
+		}
+		
+		/**
+		 * @desc			Inits the class, setting up vars
+		 * @param	object	$config object containing config
+		 * @return	object	instance of class
+		 * @author			Scott Luther
+		 * @since			3.1
+		 * 
+		 * @ignore
+		 */
+		
+		public function init($config) {
+			return self::$instance;
+		}
+		
 		/**
 		 * @desc			Loads and checks different vars when class is initiating
 		 * @author			Matthias Reuter
 		 * @since			2.0
 		 * @ignore
 		 */
-		public function __construct($ipbwi){
-			// loads common classes
-			$this->ipbwi = $ipbwi;
+		public function __construct(){
 		}
 		/**
 		 * @desc			Finds out if a user has permission to do something...
@@ -35,13 +64,13 @@
 		 */
 		public function has($perm,$user=false){
 			if(substr($perm,0,2) != "g_"){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('badPermID'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('badPermID'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			$perm = preg_replace('#[^a-z_]#','',$perm);
-			$info = $this->ipbwi->member->info($user);
+			$info = Ipbwi::instance()->member->info($user);
 			if(!is_array($info)){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('badMemID'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('badMemID'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			if($info[$perm]){
@@ -50,8 +79,8 @@
 			}elseif(isset($info['mgroup_others'])){
 				$info['mgroup_others'] = substr($info['mgroup_others'],1,strlen($info['mgroup_others'])-2);
 				if($info['mgroup_others'] != ''){
-					$this->ipbwi->ips_wrapper->DB->query('SELECT '.$perm.' FROM '.$this->ipbwi->board['sql_tbl_prefix'].'groups WHERE g_id IN('.$info['mgroup_others'].')');
-					while($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+					Ipbwi_IpsWrapper::instance()->DB->query('SELECT '.$perm.' FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'groups WHERE g_id IN('.$info['mgroup_others'].')');
+					while($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 						if($row[$perm]){
 							return true;
 						}
@@ -95,13 +124,13 @@
 		 */
 		public function best($perm,$user=false,$zero=true){
 			if(substr($perm,0,2) != 'g_'){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('badPermID'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('badPermID'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			$perm = preg_replace('#[^a-z_]#','',$perm);
-			$info = $this->ipbwi->member->info($user);
+			$info = Ipbwi::instance()->member->info($user);
 			if(!is_array($info)){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('badMemID'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('badMemID'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			$init = $info[$perm];
@@ -113,8 +142,8 @@
 			$info['mgroup_others'] = explode(',',$info['mgroup_others']);
 			$info['mgroup_others'] = implode(',',$info['mgroup_others']);
 			if($info['mgroup_others'] != ''){
-				$this->ipbwi->ips_wrapper->DB->query('SELECT '.$perm.' FROM '.$this->ipbwi->board['sql_tbl_prefix'].'groups WHERE g_id IN('.$info['mgroup_others'].')');
-				while($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+				Ipbwi_IpsWrapper::instance()->DB->query('SELECT '.$perm.' FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'groups WHERE g_id IN('.$info['mgroup_others'].')');
+				while($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 					if($row[$perm] > $init){
 						$init = $row[$perm];
 					}

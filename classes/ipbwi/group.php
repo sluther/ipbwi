@@ -9,7 +9,7 @@
 	 * @license			http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License
 	 */
 	namespace Ipbwi;
-	class Ipbwi_Group extends Ipbwi {
+	class Ipbwi_Group {
 		private $ipbwi			= null;
 		/**
 		 * @desc			Loads and checks different vars when class is initiating
@@ -19,7 +19,7 @@
 		 */
 		public function __construct($ipbwi){
 			// loads common classes
-			$this->ipbwi = $ipbwi;
+			Ipbwi::instance()-> = $ipbwi;
 		}
 		/**
 		 * @desc			Returns information on a group.
@@ -35,17 +35,17 @@
 		public function info($group=false){
 			if(!$group){
 				// No Group? Return current group info
-				$group = $this->ipbwi->member->myInfo['member_group_id'];
+				$group = Ipbwi::instance()->member->myInfo['member_group_id'];
 			}
 			// Check for cache - if exists don't bother getting it again
-			if($cache = $this->ipbwi->cache->get('groupInfo', $group)){
+			if($cache = Ipbwi::instance()->cache->get('groupInfo', $group)){
 				return $cache;
 			}else{
 				// Return group info if group given
-				$this->ipbwi->ips_wrapper->DB->query('SELECT g.* FROM '.$this->ipbwi->board['sql_tbl_prefix'].'groups g WHERE g_id="'.intval($group).'"');
-				if($this->ipbwi->ips_wrapper->DB->getTotalRows()){
-					$info = $this->ipbwi->ips_wrapper->DB->fetch();
-					$this->ipbwi->cache->save('groupInfo', $group, $info);
+				Ipbwi_IpsWrapper::instance()->DB->query('SELECT g.* FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'groups g WHERE g_id="'.intval($group).'"');
+				if(Ipbwi_IpsWrapper::instance()->DB->getTotalRows()){
+					$info = Ipbwi_IpsWrapper::instance()->DB->fetch();
+					Ipbwi::instance()->cache->save('groupInfo', $group, $info);
 					return $info;
 				}else{
 					return false;
@@ -68,7 +68,7 @@
 		 */
 		public function change($group,$member=false,$extra=false){
 			if(!$member){
-				$member = $this->ipbwi->member->myInfo['member_id'];
+				$member = Ipbwi::instance()->member->myInfo['member_id'];
 			}
 			if($extra !== false){
 				$sql_extra = ',mgroup_others="'.implode(',',$extra).'"';
@@ -76,10 +76,10 @@
 				$sql_extra = '';
 			}
 			
-			$SQL = 'UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'members SET member_group_id="'.$group.'"'.$sql_extra.' WHERE member_id="'.intval($member).'"';
+			$SQL = 'UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'members SET member_group_id="'.$group.'"'.$sql_extra.' WHERE member_id="'.intval($member).'"';
 
-			if($this->ipbwi->ips_wrapper->DB->query($SQL)){
-				$this->ipbwi->member->myInfo['member_group_id'] = $group;
+			if(Ipbwi_IpsWrapper::instance()->DB->query($SQL)){
+				Ipbwi::instance()->member->myInfo['member_group_id'] = $group;
 				return true;
 			}else{
 				return false;
@@ -103,8 +103,8 @@
 			if (!is_array($group)) $group = explode(',', $group);
 			settype($group, 'array');
 			if ($member) {
-				$this->ipbwi->ips_wrapper->DB->query('SELECT member_group_id,mgroup_others FROM '.$this->ipbwi->board['sql_tbl_prefix'].'members WHERE member_id="'.$member.'"');
-				if($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+				Ipbwi_IpsWrapper::instance()->DB->query('SELECT member_group_id,mgroup_others FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'members WHERE member_id="'.$member.'"');
+				if($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 					if(in_array($row['member_group_id'], $group)){
 						return true;
 					}
@@ -119,11 +119,11 @@
 				}
 				return false;
 			}else{
-				if(in_array($this->ipbwi->member->myInfo['member_group_id'], $group)){
+				if(in_array(Ipbwi::instance()->member->myInfo['member_group_id'], $group)){
 					return true;
 				}else{
 					// START CHANGE
-					$other = explode(',',$this->ipbwi->member->myInfo['mgroup_others']);
+					$other = explode(',',Ipbwi::instance()->member->myInfo['mgroup_others']);
 					if(is_array($other)) {
 						foreach($other as $v) {
 							if(in_array($v, $group)) {

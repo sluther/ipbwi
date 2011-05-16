@@ -9,7 +9,7 @@
 	 * @license			http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License
 	 */
 	namespace Ipbwi;
-	class Ipbwi_Pm extends Ipbwi {
+	class Ipbwi_Pm {
 		private $ipbwi			= null;
 		/**
 		 * @desc			Loads and checks different vars when class is initiating
@@ -19,7 +19,7 @@
 		 */
 		public function __construct($ipbwi){
 			// loads common classes
-			$this->ipbwi = $ipbwi;
+			Ipbwi::instance()-> = $ipbwi;
 		}
 		/**
 		 * @desc			Moves a personal message to another folder.
@@ -34,31 +34,31 @@
 		 * @since			2.0
 		 */
 		public function move($messageID, $targetID){
-			if($this->ipbwi->member->isLoggedIn()){
+			if(Ipbwi::instance()->member->isLoggedIn()){
 				// Grab PM Info
 				if($info = $this->info($messageID, 0)){
 					// Check the Dest Folder Exists
 					if($this->folderExists($targetID) && ($targetID != 'drafts' || $targetID != 'new')){
-						$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'message_topic_user_map SET map_folder_id="'.$targetID.'" WHERE map_topic_id="'.$messageID.'" AND map_user_id="'.$this->ipbwi->member->myInfo['member_id'].'" LIMIT 1');
-						if($this->ipbwi->ips_wrapper->DB->getAffectedRows()){
+						Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'message_topic_user_map SET map_folder_id="'.$targetID.'" WHERE map_topic_id="'.$messageID.'" AND map_user_id="'.Ipbwi::instance()->member->myInfo['member_id'].'" LIMIT 1');
+						if(Ipbwi_IpsWrapper::instance()->DB->getAffectedRows()){
 							// Update Cache
-							$this->ipbwi->cache->updatePM($this->ipbwi->member->myInfo['member_id']);
+							Ipbwi::instance()->cache->updatePM(Ipbwi::instance()->member->myInfo['member_id']);
 							
 							return true;
 						}else{
-							$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('pmMsgNoMove'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+							Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('pmMsgNoMove'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 							return false;
 						}
 					}else{
-						$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('pmFolderNotExist'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+						Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('pmFolderNotExist'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 						return false;
 					}
 				}else{
-					$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('pmMsgNoMove'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('pmMsgNoMove'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					return false;
 				}
 			}else{
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 		}
@@ -74,7 +74,7 @@
 		 * @since			2.0
 		 */
 		public function folderDelete($folderID){
-			if($this->ipbwi->member->isLoggedIn()){
+			if(Ipbwi::instance()->member->isLoggedIn()){
 				$folders = $this->getFolders();
 				$foldersi = array();
 				if($this->folderExists($folderID)){
@@ -89,18 +89,18 @@
 							}
 						}
 						$newvids = serialize($foldersi);
-						$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'profile_portal SET pconversation_filters="'.addslashes($newvids).'" WHERE pp_member_id="'.$this->ipbwi->member->myInfo['member_id'].'" LIMIT 1');
+						Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'profile_portal SET pconversation_filters="'.addslashes($newvids).'" WHERE pp_member_id="'.Ipbwi::instance()->member->myInfo['member_id'].'" LIMIT 1');
 						return true;
 					}else{
-						$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('pmFolderNoRem'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+						Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('pmFolderNoRem'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 						return false;
 					}
 				}else{
-					$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('pmFolderNotExist'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('pmFolderNotExist'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					return false;
 				}
 			}else{
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 		}
@@ -117,21 +117,21 @@
 		 * @since			2.0
 		 */
 		public function folderFlush($folderID, $keepUnread = 0){
-			if($this->ipbwi->member->isLoggedIn()){
+			if(Ipbwi::instance()->member->isLoggedIn()){
 				if($this->folderExists($folderID)){
 					if($keepUnread){
 						$sql_keep_unread = ' AND m.map_has_unread="0"';
 					}
 					
 					// Just so we can decrement total
-					$queryCount = $this->ipbwi->ips_wrapper->DB->query('SELECT COUNT(t.mt_id) AS messagescount FROM '.$this->ipbwi->board['sql_tbl_prefix'].'message_topic_user_map m LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'message_topics t ON (map_topic_id=t.mt_id) WHERE m.map_folder_id="'.$folderID.'" AND m.map_user_id="'.$this->ipbwi->member->myInfo['member_id'].'"'.$sql_keep_unread);
-					$row = $this->ipbwi->ips_wrapper->DB->fetch($queryCount);
+					$queryCount = Ipbwi_IpsWrapper::instance()->DB->query('SELECT COUNT(t.mt_id) AS messagescount FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'message_topic_user_map m LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'message_topics t ON (map_topic_id=t.mt_id) WHERE m.map_folder_id="'.$folderID.'" AND m.map_user_id="'.Ipbwi::instance()->member->myInfo['member_id'].'"'.$sql_keep_unread);
+					$row = Ipbwi_IpsWrapper::instance()->DB->fetch($queryCount);
 					$del = $row['messagescount'];
 					
 					// Get message text ids and check deletion state
-					$query = $this->ipbwi->ips_wrapper->DB->query('SELECT t.mt_id,m.map_user_active as active FROM '.$this->ipbwi->board['sql_tbl_prefix'].'message_topic_user_map m LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'message_topics t ON (map_topic_id=t.mt_id) WHERE m.map_folder_id="'.$folderID.'" AND m.map_user_id="'.$this->ipbwi->member->myInfo['member_id'].'"'.$sql_keep_unread);
+					$query = Ipbwi_IpsWrapper::instance()->DB->query('SELECT t.mt_id,m.map_user_active as active FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'message_topic_user_map m LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'message_topics t ON (map_topic_id=t.mt_id) WHERE m.map_folder_id="'.$folderID.'" AND m.map_user_id="'.Ipbwi::instance()->member->myInfo['member_id'].'"'.$sql_keep_unread);
 					// start deleting
-					while($row = $this->ipbwi->ips_wrapper->DB->fetch($query)){
+					while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($query)){
 						if($row['mt_id'] != ''){
 							if($row['active'] == 0){
 								$row['deleted'] = 1;
@@ -141,10 +141,10 @@
 					}
 					
 					// Update Total
-					$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'members SET msg_count_total=msg_count_total-'.intval($del).' WHERE member_id="'.$this->ipbwi->member->myInfo['member_id'].'" LIMIT 1');
+					Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'members SET msg_count_total=msg_count_total-'.intval($del).' WHERE member_id="'.Ipbwi::instance()->member->myInfo['member_id'].'" LIMIT 1');
 					
 					// Update Cache
-					$this->ipbwi->cache->updatePM($this->ipbwi->member->myInfo['member_id']);
+					Ipbwi::instance()->cache->updatePM(Ipbwi::instance()->member->myInfo['member_id']);
 					
 					return $del;
 				}else{
@@ -167,7 +167,7 @@
 		 * @since			2.0
 		 */
 		public function folderRename($folderID, $newName){
-			if($this->ipbwi->member->isLoggedIn()){
+			if(Ipbwi::instance()->member->isLoggedIn()){
 				// Get Folders
 				$folders = $this->getFolders();
 
@@ -176,11 +176,11 @@
 					$folders[$folderID]['real'] = $newName;
 					
 					// Rename the Folder
-					$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'profile_portal SET pconversation_filters="'.addslashes(serialize($folders)).'" WHERE pp_member_id="'.$this->ipbwi->member->myInfo['member_id'].'" LIMIT 1');
+					Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'profile_portal SET pconversation_filters="'.addslashes(serialize($folders)).'" WHERE pp_member_id="'.Ipbwi::instance()->member->myInfo['member_id'].'" LIMIT 1');
 					
 					return true;
 				}else{
-					$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('pmFolderNotExist'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('pmFolderNotExist'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					return false;
 				}
 			}else{
@@ -200,7 +200,7 @@
 		 * @since			2.0
 		 */
 		public function folderAdd($name){
-			if($this->ipbwi->member->isLoggedIn()){
+			if(Ipbwi::instance()->member->isLoggedIn()){
 				// Get Folders
 				$folders = $this->getFolders();
 				
@@ -213,7 +213,7 @@
 					$newFolders['dir_'.$foldersno]['count']		= 0;
 					$newFolders['dir_'.$foldersno]['protected']	= 0;
 					
-					$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'profile_portal SET pconversation_filters="'.addslashes(serialize($newFolders)).'" WHERE pp_member_id="'.$this->ipbwi->member->myInfo['member_id'].'" LIMIT 1');
+					Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'profile_portal SET pconversation_filters="'.addslashes(serialize($newFolders)).'" WHERE pp_member_id="'.Ipbwi::instance()->member->myInfo['member_id'].'" LIMIT 1');
 					return 'dir_'.$foldersno;
 				}else{
 					// Just incase
@@ -225,7 +225,7 @@
 							$newFolders['dir_'.$foldersno]['count']		= 0;
 							$newFolders['dir_'.$foldersno]['protected']	= 0;
 					
-							$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'profile_portal SET pconversation_filters="'.addslashes(serialize($newFolders)).'" WHERE pp_member_id="'.$this->ipbwi->member->myInfo['member_id'].'" LIMIT 1');
+							Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'profile_portal SET pconversation_filters="'.addslashes(serialize($newFolders)).'" WHERE pp_member_id="'.Ipbwi::instance()->member->myInfo['member_id'].'" LIMIT 1');
 							return 'dir_'.$foldersno;
 						}
 						++$foldersno;
@@ -278,7 +278,7 @@
 				return false;
 			}
 			
-			$memberInfo = $this->ipbwi->member->info($userID);
+			$memberInfo = Ipbwi::instance()->member->info($userID);
 			$folders = $this->getFolders();
 			
 			if(isset($folders[$folderID])){
@@ -300,17 +300,17 @@
 		 */
 		public function getFolders($userID=false){
 			// Check for cache - if exists don't bother getting it again
-			if($cache = $this->ipbwi->cache->get('pmFolderList',intval($userID))){
+			if($cache = Ipbwi::instance()->cache->get('pmFolderList',intval($userID))){
 				return $cache;
 			}else{
-				if(($this->ipbwi->member->isLoggedIn() && $this->ipbwi->permissions->has('g_use_pm')) || $userID){
-					$memberInfo	= $this->ipbwi->member->info($userID);
-					$sql		= 'SELECT pconversation_filters FROM '.$this->ipbwi->board['sql_tbl_prefix'].'profile_portal WHERE pp_member_id="'.$memberInfo['member_id'].'"';
-					$query = $this->ipbwi->ips_wrapper->DB->query($sql);
+				if((Ipbwi::instance()->member->isLoggedIn() && Ipbwi::instance()->permissions->has('g_use_pm')) || $userID){
+					$memberInfo	= Ipbwi::instance()->member->info($userID);
+					$sql		= 'SELECT pconversation_filters FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'profile_portal WHERE pp_member_id="'.$memberInfo['member_id'].'"';
+					$query = Ipbwi_IpsWrapper::instance()->DB->query($sql);
 					
-					if($row = $this->ipbwi->ips_wrapper->DB->fetch($query)){
+					if($row = Ipbwi_IpsWrapper::instance()->DB->fetch($query)){
 						$folders = unserialize($row['pconversation_filters']);
-						$this->ipbwi->cache->save('pmFolderList',intval($userID),$folders);
+						Ipbwi::instance()->cache->save('pmFolderList',intval($userID),$folders);
 						return $folders;
 					}else{
 						return false;
@@ -333,7 +333,7 @@
 		 */
 		public function spaceUsage(){
 			$PMs = $this->numTotalPms();
-			$maximumPMs = $this->ipbwi->permissions->best('g_max_messages');
+			$maximumPMs = Ipbwi::instance()->permissions->best('g_max_messages');
 			// Remove possible division by zero...
 			if($maximumPMs == 0){
 				return 0;
@@ -353,8 +353,8 @@
 		 * @since			2.0
 		 */
 		public function numFolderPMs($folderID){
-			if(!$this->ipbwi->member->isLoggedIn() AND !$this->permissions->has('g_use_pm')){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+			if(!Ipbwi::instance()->member->isLoggedIn() AND !$this->permissions->has('g_use_pm')){
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			
@@ -379,24 +379,24 @@
 		 */
 		public function delete($messageID){
 			if(!$this->member->isLoggedIn()){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			
 			// check deletion state
-			#$query = $this->ipbwi->ips_wrapper->DB->query('SELECT mt_is_deleted as deleted FROM '.$this->ipbwi->board['sql_tbl_prefix'].'message_topics WHERE mt_id = "'.intval($messageID).'"');
-			$query = $this->ipbwi->ips_wrapper->DB->query('SELECT map_user_active as active FROM '.$this->ipbwi->board['sql_tbl_prefix'].'message_topic_user_map WHERE map_user_id="'.$this->ipbwi->member->myInfo['member_id'].'" AND map_topic_id="'.intval($messageID).'"');
-			$state = $this->ipbwi->ips_wrapper->DB->fetch($query);
+			#$query = Ipbwi_IpsWrapper::instance()->DB->query('SELECT mt_is_deleted as deleted FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'message_topics WHERE mt_id = "'.intval($messageID).'"');
+			$query = Ipbwi_IpsWrapper::instance()->DB->query('SELECT map_user_active as active FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'message_topic_user_map WHERE map_user_id="'.Ipbwi::instance()->member->myInfo['member_id'].'" AND map_topic_id="'.intval($messageID).'"');
+			$state = Ipbwi_IpsWrapper::instance()->DB->fetch($query);
 			if($state['active'] == 0){
 				$state['deleted'] = 1;
 			}
 			$return		= $this->_internal_delete($messageID,intval($state['deleted']));
 			
 			// Update Total
-			$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'members SET msg_count_total=msg_count_total-1 WHERE member_id="'.$this->ipbwi->member->myInfo['member_id'].'" LIMIT 1');
+			Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'members SET msg_count_total=msg_count_total-1 WHERE member_id="'.Ipbwi::instance()->member->myInfo['member_id'].'" LIMIT 1');
 			
 			// Update Cache
-			$this->ipbwi->cache->updatePM($this->ipbwi->member->myInfo['member_id']);
+			Ipbwi::instance()->cache->updatePM(Ipbwi::instance()->member->myInfo['member_id']);
 			
 			return $return;
 		}
@@ -407,18 +407,18 @@
 			$messageID	= intval($messageID);
 			if($messageID > 0){
 				if($isDeleted != 1){
-					#$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'message_topics SET mt_is_deleted=1 WHERE mt_id="'.$messageID.'" LIMIT 1');
-					$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'message_topic_user_map SET map_user_active=1 WHERE map_user_id="'.$this->ipbwi->member->myInfo['member_id'].'" AND map_topic_id="'.$messageID.'" LIMIT 1');
+					#Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'message_topics SET mt_is_deleted=1 WHERE mt_id="'.$messageID.'" LIMIT 1');
+					Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'message_topic_user_map SET map_user_active=1 WHERE map_user_id="'.Ipbwi::instance()->member->myInfo['member_id'].'" AND map_topic_id="'.$messageID.'" LIMIT 1');
 				// Delete Topic and Posts permanently if already marked as deleted
 				}else{
 					// delete topics
-					$this->ipbwi->ips_wrapper->DB->query('DELETE FROM '.$this->ipbwi->board['sql_tbl_prefix'].'message_topics WHERE mt_id="'.$messageID.'" AND mt_is_deleted="1"');
+					Ipbwi_IpsWrapper::instance()->DB->query('DELETE FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'message_topics WHERE mt_id="'.$messageID.'" AND mt_is_deleted="1"');
 					// delete posts
-					$this->ipbwi->ips_wrapper->DB->query('DELETE FROM '.$this->ipbwi->board['sql_tbl_prefix'].'message_posts WHERE msg_topic_id = "'.$messageID.'"');
+					Ipbwi_IpsWrapper::instance()->DB->query('DELETE FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'message_posts WHERE msg_topic_id = "'.$messageID.'"');
 				}
 				
 				// delete user map
-				$this->ipbwi->ips_wrapper->DB->query('DELETE FROM '.$this->ipbwi->board['sql_tbl_prefix'].'message_topic_user_map WHERE map_topic_id="'.$messageID.'" AND map_user_id="'.$this->ipbwi->member->myInfo['member_id'].'"');
+				Ipbwi_IpsWrapper::instance()->DB->query('DELETE FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'message_topic_user_map WHERE map_topic_id="'.$messageID.'" AND map_user_id="'.Ipbwi::instance()->member->myInfo['member_id'].'"');
 				return true;
 			}else{
 				return false;
@@ -440,17 +440,17 @@
 		 */
 		public function reply($topicID, $msgContent, $options=array() )
 		{
-			if(!$this->ipbwi->member->isLoggedIn()){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+			if(!Ipbwi::instance()->member->isLoggedIn()){
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			if(!$msgContent OR strlen($msgContent) < 2){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('pmMessage'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('pmMessage'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			
 			// send it
-			return $this->ipbwi->ips_wrapper->messenger->sendReply($this->ipbwi->member->myInfo['member_id'], $topicID, $msgContent);
+			return Ipbwi_IpsWrapper::instance()->messenger->sendReply(Ipbwi::instance()->member->myInfo['member_id'], $topicID, $msgContent);
 		}
 		
 		/**
@@ -469,38 +469,38 @@
 		 * @since			2.0
 		 */
 		public function send($toID, $title, $message, $inviteUsers = array(), $options = array()){
-			if(!$this->ipbwi->member->isLoggedIn()){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+			if(!Ipbwi::instance()->member->isLoggedIn()){
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			if(!$toID){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('pmNoRecipient'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('pmNoRecipient'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
-			if($toID == $this->ipbwi->member->myInfo['member_id']){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('pmCantSendToSelf'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+			if($toID == Ipbwi::instance()->member->myInfo['member_id']){
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('pmCantSendToSelf'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			if(!$title OR strlen($title) < 2){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('pmTitle'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('pmTitle'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			if(!$message OR strlen($message) < 2){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('pmMessage'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('pmMessage'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
-			$this->ipbwi->ips_wrapper->DB->query('SELECT member_id FROM '.$this->ipbwi->board['sql_tbl_prefix'].'members WHERE member_id="'.intval($toID).'"');
-			if($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+			Ipbwi_IpsWrapper::instance()->DB->query('SELECT member_id FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'members WHERE member_id="'.intval($toID).'"');
+			if($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 				// Just incase
 				if(!$row['member_id']){
-					$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('pmMemNotExist'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('pmMemNotExist'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					return false;
 				}
 				// Actually send it
-				$this->ipbwi->ips_wrapper->messenger->sendNewPersonalTopic($toID, $this->ipbwi->member->myInfo['member_id'], $inviteUsers, $title, $message, $options);
+				Ipbwi_IpsWrapper::instance()->messenger->sendNewPersonalTopic($toID, Ipbwi::instance()->member->myInfo['member_id'], $inviteUsers, $title, $message, $options);
 				return true;
 			}else{
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('pmMemNotExist'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('pmMemNotExist'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 		}
@@ -517,59 +517,59 @@
 		 * @since			2.0
 		 */
 		public function info($ID, $markRead = true){
-			if(!$this->ipbwi->member->isLoggedIn() AND !$this->ipbwi->permissions->has('g_use_pm')){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+			if(!Ipbwi::instance()->member->isLoggedIn() AND !Ipbwi::instance()->permissions->has('g_use_pm')){
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			
-			if($cache = $this->ipbwi->cache->get('pmInfo',$folder)){
+			if($cache = Ipbwi::instance()->cache->get('pmInfo',$folder)){
 				return $cache;
 			}
 			
-			$sql = 'SELECT t.*, p.*, m.*, map.* FROM '.$this->ipbwi->board['sql_tbl_prefix'].'message_topics t
-			LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'message_posts p ON (p.msg_topic_id=t.mt_id)
-			LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'members m ON (m.member_id=p.msg_author_id)
-			LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'message_topic_user_map map ON (map.map_topic_id=t.mt_id)
-			WHERE p.msg_topic_id = "'.$ID.'" AND map.map_user_id="'.$this->ipbwi->member->myInfo['member_id'].'" ORDER BY p.msg_date ASC';
+			$sql = 'SELECT t.*, p.*, m.*, map.* FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'message_topics t
+			LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'message_posts p ON (p.msg_topic_id=t.mt_id)
+			LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'members m ON (m.member_id=p.msg_author_id)
+			LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'message_topic_user_map map ON (map.map_topic_id=t.mt_id)
+			WHERE p.msg_topic_id = "'.$ID.'" AND map.map_user_id="'.Ipbwi::instance()->member->myInfo['member_id'].'" ORDER BY p.msg_date ASC';
 
-			$query = $this->ipbwi->ips_wrapper->DB->query($sql);
-			if($this->ipbwi->ips_wrapper->DB->getTotalRows($query)){
+			$query = Ipbwi_IpsWrapper::instance()->DB->query($sql);
+			if(Ipbwi_IpsWrapper::instance()->DB->getTotalRows($query)){
 				// get em
 				$i = 1;
-				while($row = $this->ipbwi->ips_wrapper->DB->fetch($query)){
+				while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($query)){
 				
 					//mark as read
 					if($i == 1 && $markRead && $row['map_has_unread'] == 1){
-						$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'message_topic_user_map SET map_has_unread="0", map_read_time="'.time().'", map_folder_id="myconvo" WHERE map_topic_id="'.$ID.'" AND map_user_id="'.$this->ipbwi->member->myInfo['member_id'].'" LIMIT 1');
-						$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'members SET msg_count_new=msg_count_new-1 WHERE member_id="'.$this->ipbwi->member->myInfo['member_id'].'" AND msg_count_new > 0');
+						Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'message_topic_user_map SET map_has_unread="0", map_read_time="'.time().'", map_folder_id="myconvo" WHERE map_topic_id="'.$ID.'" AND map_user_id="'.Ipbwi::instance()->member->myInfo['member_id'].'" LIMIT 1');
+						Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'members SET msg_count_new=msg_count_new-1 WHERE member_id="'.Ipbwi::instance()->member->myInfo['member_id'].'" AND msg_count_new > 0');
 						
 						$folders					= $this->getFolders();
 						if($folders['new']['count'] > 0){
 							$folders['new']['count']	= $folders['new']['count']-1;
 							$folders					= serialize($folders);
-							$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'profile_portal SET pconversation_filters="'.addslashes($folders).'" WHERE pp_member_id="'.$this->ipbwi->member->myInfo['member_id'].'"');
+							Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'profile_portal SET pconversation_filters="'.addslashes($folders).'" WHERE pp_member_id="'.Ipbwi::instance()->member->myInfo['member_id'].'"');
 						}
 					}
 				
-					$this->ipbwi->ips_wrapper->parser->parse_smilies	= 1;
-					$this->ipbwi->ips_wrapper->parser->parse_html		= 0;
-					$this->ipbwi->ips_wrapper->parser->parse_bbcode		= 1;
-					$this->ipbwi->ips_wrapper->parser->strip_quotes		= 1;
-					$this->ipbwi->ips_wrapper->parser->parse_nl2br		= 1;
+					Ipbwi_IpsWrapper::instance()->parser->parse_smilies	= 1;
+					Ipbwi_IpsWrapper::instance()->parser->parse_html		= 0;
+					Ipbwi_IpsWrapper::instance()->parser->parse_bbcode		= 1;
+					Ipbwi_IpsWrapper::instance()->parser->strip_quotes		= 1;
+					Ipbwi_IpsWrapper::instance()->parser->parse_nl2br		= 1;
 					// make proper XHTML
-					$row['msg_post_bbcode']		= $this->ipbwi->properXHTML($this->ipbwi->bbcode->html2bbcode($row['msg_post']));
-					$row['msg_post']			= $this->ipbwi->ips_wrapper->parser->preDisplayParse($row['msg_post']);
-					$row['msg_post']			= $this->ipbwi->properXHTML($row['msg_post']);
-					$row['mt_title']			= $this->ipbwi->properXHTML($row['mt_title']);
-					$row['name']				= $this->ipbwi->properXHTML($row['name']);
-					$row['mt_vid_folder']		= $this->ipbwi->properXHTML($row['mt_vid_folder']);
-					$row['recipient_name']		= $this->ipbwi->properXHTML($row['recipient_name']);
+					$row['msg_post_bbcode']		= Ipbwi::instance()->properXHTML(Ipbwi::instance()->bbcode->html2bbcode($row['msg_post']));
+					$row['msg_post']			= Ipbwi_IpsWrapper::instance()->parser->preDisplayParse($row['msg_post']);
+					$row['msg_post']			= Ipbwi::instance()->properXHTML($row['msg_post']);
+					$row['mt_title']			= Ipbwi::instance()->properXHTML($row['mt_title']);
+					$row['name']				= Ipbwi::instance()->properXHTML($row['name']);
+					$row['mt_vid_folder']		= Ipbwi::instance()->properXHTML($row['mt_vid_folder']);
+					$row['recipient_name']		= Ipbwi::instance()->properXHTML($row['recipient_name']);
 					$PM[]						= $row;
 					
 					$i++;
 				}
 				return $PM;
-				$this->ipbwi->cache->save('pmInfo',$folder,$PM);
+				Ipbwi::instance()->cache->save('pmInfo',$folder,$PM);
 			}else{
 				return false;
 			}
@@ -593,8 +593,8 @@
 		 */
 		public function getList($folder = 'myconvo',$options=array('order' => 'desc', 'start' => '0', 'limit' => '30', 'orderby' => 'name')){
 			// has perms?
-			if(!$this->ipbwi->member->isLoggedIn() AND !$this->ipbwi->permissions->has('g_use_pm')){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+			if(!Ipbwi::instance()->member->isLoggedIn() AND !Ipbwi::instance()->permissions->has('g_use_pm')){
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			// folder exists?
@@ -615,7 +615,7 @@
 				$options['orderby']	= 'name';
 			}
 			
-			if($cache = $this->ipbwi->cache->get('pmList',$folder)){
+			if($cache = Ipbwi::instance()->cache->get('pmList',$folder)){
 				return $cache;
 			}
 			
@@ -638,22 +638,22 @@
 			}
 			
 			$PMs = array();
-			$sql = 'SELECT map.*, t.*, m.* FROM '.$this->ipbwi->board['sql_tbl_prefix'].'message_topic_user_map map
-			LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'message_topics t ON (t.mt_id=map.map_topic_id)
-			LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'members m ON (m.member_id=t.mt_starter_id)
-			WHERE map.map_user_id = "'.$this->ipbwi->member->myInfo['member_id'].'" AND map.map_user_active="1" AND map.map_folder_id = "'.$folder.'"'.$onlyNew.' ORDER BY map.map_'.$options['orderby'].' '.$options['order'].' '.$filter;
+			$sql = 'SELECT map.*, t.*, m.* FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'message_topic_user_map map
+			LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'message_topics t ON (t.mt_id=map.map_topic_id)
+			LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'members m ON (m.member_id=t.mt_starter_id)
+			WHERE map.map_user_id = "'.Ipbwi::instance()->member->myInfo['member_id'].'" AND map.map_user_active="1" AND map.map_folder_id = "'.$folder.'"'.$onlyNew.' ORDER BY map.map_'.$options['orderby'].' '.$options['order'].' '.$filter;
 			
-			$query = $this->ipbwi->ips_wrapper->DB->query($sql);
-			if($this->ipbwi->ips_wrapper->DB->getTotalRows($query)){
-				$this->ipbwi->ips_wrapper->parser->parse_smilies	= 1;
-				$this->ipbwi->ips_wrapper->parser->parse_html		= 0;
-				$this->ipbwi->ips_wrapper->parser->parse_bbcode		= 1;
-				$this->ipbwi->ips_wrapper->parser->strip_quotes 	= 1;
-				$this->ipbwi->ips_wrapper->parser->parse_nl2br		= 1;
-				while($row = $this->ipbwi->ips_wrapper->DB->fetch($query)){
+			$query = Ipbwi_IpsWrapper::instance()->DB->query($sql);
+			if(Ipbwi_IpsWrapper::instance()->DB->getTotalRows($query)){
+				Ipbwi_IpsWrapper::instance()->parser->parse_smilies	= 1;
+				Ipbwi_IpsWrapper::instance()->parser->parse_html		= 0;
+				Ipbwi_IpsWrapper::instance()->parser->parse_bbcode		= 1;
+				Ipbwi_IpsWrapper::instance()->parser->strip_quotes 	= 1;
+				Ipbwi_IpsWrapper::instance()->parser->parse_nl2br		= 1;
+				while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($query)){
 					$PMs[] = $row;
 				}
-				$this->ipbwi->cache->save('pmList',$folder,$PMs);
+				Ipbwi::instance()->cache->save('pmList',$folder,$PMs);
 				return $PMs;
 			}else{
 				return false;
@@ -670,12 +670,12 @@
 		 * @since			2.0
 		 */
 		public function numNewPMs(){
-			if(!$this->ipbwi->member->isLoggedIn() AND !$this->ipbwi->permissions->has('g_use_pm')){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+			if(!Ipbwi::instance()->member->isLoggedIn() AND !Ipbwi::instance()->permissions->has('g_use_pm')){
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
-			$this->ipbwi->ips_wrapper->DB->query('SELECT msg_count_new FROM '.$this->ipbwi->board['sql_tbl_prefix'].'members WHERE member_id="'.$this->ipbwi->member->myInfo['member_id'].'"');
-			if($messages = $this->ipbwi->ips_wrapper->DB->fetch()){
+			Ipbwi_IpsWrapper::instance()->DB->query('SELECT msg_count_new FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'members WHERE member_id="'.Ipbwi::instance()->member->myInfo['member_id'].'"');
+			if($messages = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 				return (int)$messages['msg_count_new'];
 			}else{
 				return false;
@@ -692,12 +692,12 @@
 		 * @since			2.0
 		 */
 		public function numTotalPMs(){
-			if(!$this->ipbwi->member->isLoggedIn() AND !$this->ipbwi->permissions->has('g_use_pm')){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+			if(!Ipbwi::instance()->member->isLoggedIn() AND !Ipbwi::instance()->permissions->has('g_use_pm')){
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
-			$this->ipbwi->ips_wrapper->DB->query('SELECT msg_count_total FROM '.$this->ipbwi->board['sql_tbl_prefix'].'members WHERE member_id="'.$this->ipbwi->member->myInfo['member_id'].'"');
-			if($messages = $this->ipbwi->ips_wrapper->DB->fetch()){
+			Ipbwi_IpsWrapper::instance()->DB->query('SELECT msg_count_total FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'members WHERE member_id="'.Ipbwi::instance()->member->myInfo['member_id'].'"');
+			if($messages = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 				return $messages['msg_count_total'];
 			}else{
 				return false;
@@ -716,8 +716,8 @@
 		 * @since			2.0
 		 */
 		public function isBlocked($blocked,$by){
-			$query = $this->ipbwi->ips_wrapper->DB->query('SELECT ignore_messages FROM '.$this->ipbwi->board['sql_tbl_prefix'].'ignored_users WHERE ignore_ignore_id="'.$blocked.'" AND ignore_owner_id="'.$by.'"');
-			if($cando = $this->ipbwi->ips_wrapper->DB->fetch($query)){
+			$query = Ipbwi_IpsWrapper::instance()->DB->query('SELECT ignore_messages FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'ignored_users WHERE ignore_ignore_id="'.$blocked.'" AND ignore_owner_id="'.$by.'"');
+			if($cando = Ipbwi_IpsWrapper::instance()->DB->fetch($query)){
 				if($cando['ignore_messages'] == 1){
 					return true;
 				}else{
@@ -745,11 +745,11 @@
 					return false;
 				}
 				// o_O. Firstly check if there is already an entry.
-				if($this->isBlocked($userID,$this->ipbwi->member->myInfo['member_id'])){
+				if($this->isBlocked($userID,Ipbwi::instance()->member->myInfo['member_id'])){
 					return true;
 				}else{
 					// We can just add an entry because theres nothing there.
-					$this->ipbwi->ips_wrapper->DB->query('INSERT INTO '.$this->ipbwi->board['sql_tbl_prefix'].'ignored_users VALUES ("", "'.$this->ipbwi->member->myInfo['member_id'].'", "'.intval($userID).'", "1", "0")');
+					Ipbwi_IpsWrapper::instance()->DB->query('INSERT INTO '.Ipbwi::instance()->board['sql_tbl_prefix'].'ignored_users VALUES ("", "'.Ipbwi::instance()->member->myInfo['member_id'].'", "'.intval($userID).'", "1", "0")');
 					return true;
 				}
 			}else{
@@ -767,10 +767,10 @@
 		 * @since			2.0
 		 */
 		public function blockedList(){
-			if($this->ipbwi->member->isLoggedIn()){
-				$this->ipbwi->ips_wrapper->DB->query('SELECT ignore_ignore_id FROM '.$this->ipbwi->board['sql_tbl_prefix'].'ibf_ignored_users WHERE ignore_owner_id="'.$this->ipbwi->member->myInfo['member_id'].'" AND ignore_messages="1"');
+			if(Ipbwi::instance()->member->isLoggedIn()){
+				Ipbwi_IpsWrapper::instance()->DB->query('SELECT ignore_ignore_id FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'ibf_ignored_users WHERE ignore_owner_id="'.Ipbwi::instance()->member->myInfo['member_id'].'" AND ignore_messages="1"');
 				$blocked = array();
-				while($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+				while($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 					$blocked[$row['contact_id']] = $row;
 				}
 				return $blocked;

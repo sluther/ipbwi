@@ -9,28 +9,57 @@
 	 * @license			http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License
 	 */
 	namespace Ipbwi;
-	class Ipbwi_Member extends Ipbwi {
-		private $ipbwi			= null;
+	class Ipbwi_Member {
 		private $loggedIn		= null;
 		public	$myInfo			= null;
+		private static $instance = null;
+	
+		/**
+		 * @desc			Singleton method - instantiates the class or returns an existing instance
+		 * @author			Scott Luther
+		 * @since			3.1
+		 * 
+		 * @ignore
+		 */
+		
+		public static function instance() {
+			if(!isset(self::$instance)) {
+				$class = __CLASS__;
+				self::$instance = new $class;
+			}
+			return self::$instance;
+		}
+		
+		/**
+		 * @desc			Inits the class, setting up vars
+		 * @param	object	$config object containing config
+		 * @return	object	instance of class
+		 * @author			Scott Luther
+		 * @since			3.1
+		 * 
+		 * @ignore
+		 */
+		
+		public function init($config) {
+			// checks if the current user is logged in
+			if(Ipbwi_IpsWrapper::instance()->loggedIn == 0){
+				$this->loggedIn = false;
+			}else{
+				$this->loggedIn = true;
+			}
+			
+			$this->myInfo = Ipbwi_IpsWrapper::instance()->myInfo();
+			return self::$instance;
+		}
+		
 		/**
 		 * @desc			Loads and checks different vars when class is initiating
 		 * @author			Matthias Reuter
 		 * @since			2.0
 		 * @ignore
 		 */
-		public function __construct($ipbwi){
-			// loads common classes
-			$this->ipbwi = $ipbwi;
-			 
-			// checks if the current user is logged in
-			if($this->ipbwi->ips_wrapper->loggedIn == 0){
-				$this->loggedIn = false;
-			}else{
-				$this->loggedIn = true;
-			}
-			
-			$this->myInfo = $this->ipbwi->ips_wrapper->myInfo();
+		public function __construct(){			 
+
 		}
 		/**
 		 * @desc			Returns whether a member can access the board's Admin CP.
@@ -44,7 +73,7 @@
 		 * @since			2.0
 		 */
 		public function isAdmin($userID=false){
-			return $this->ipbwi->permissions->has('g_access_cp',$userID);
+			return Ipbwi::instance()->permissions->has('g_access_cp',$userID);
 		}
 		/**
 		 * @desc			Returns whether a member is a super moderator.
@@ -58,7 +87,7 @@
 		 * @since			2.0
 		 */
 		public function isSuperMod($userID=false){
-			return $this->ipbwi->permissions->has('g_is_supmod',$userID);
+			return Ipbwi::instance()->permissions->has('g_is_supmod',$userID);
 		}
 		/**
 		 * @desc			Returns whether a member is logged in.
@@ -100,39 +129,39 @@
 					$userID = $this->myInfo['member_id'];
 				}else{
 					// Return guest group info
-					$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT * FROM '.$this->ipbwi->board['sql_tbl_prefix'].'groups WHERE g_id="2"');
-					if($this->ipbwi->ips_wrapper->DB->getTotalRows($sql) == 0){
+					$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT * FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'groups WHERE g_id="2"');
+					if(Ipbwi_IpsWrapper::instance()->DB->getTotalRows($sql) == 0){
 						return false;
 					}else{
-						$info = $this->ipbwi->ips_wrapper->DB->fetch($sql);
+						$info = Ipbwi_IpsWrapper::instance()->DB->fetch($sql);
 						
-						$this->ipbwi->ips_wrapper->parser->parse_smilies			= 1;
-						$this->ipbwi->ips_wrapper->parser->parse_html				= 0;
-						$this->ipbwi->ips_wrapper->parser->parse_nl2br				= 1;
-						$this->ipbwi->ips_wrapper->parser->parse_bbcode				= 1;
-						$this->ipbwi->ips_wrapper->parser->parsing_section			= 'topics';
+						Ipbwi_IpsWrapper::instance()->parser->parse_smilies			= 1;
+						Ipbwi_IpsWrapper::instance()->parser->parse_html				= 0;
+						Ipbwi_IpsWrapper::instance()->parser->parse_nl2br				= 1;
+						Ipbwi_IpsWrapper::instance()->parser->parse_bbcode				= 1;
+						Ipbwi_IpsWrapper::instance()->parser->parsing_section			= 'topics';
 						
 						$allowedRichText = array('signature', 'pp_about_me');
 						
 						foreach($allowedRichText as $allowedRichText_field){
 							if(isset($info[$allowedRichText_field])){
-								$info[$allowedRichText_field]	= $this->ipbwi->ips_wrapper->parser->preDisplayParse($info[$allowedRichText_field]);
-								$info[$allowedRichText_field]	= $this->ipbwi->makeSafe($info[$allowedRichText_field]);
+								$info[$allowedRichText_field]	= Ipbwi_IpsWrapper::instance()->parser->preDisplayParse($info[$allowedRichText_field]);
+								$info[$allowedRichText_field]	= Ipbwi::instance()->makeSafe($info[$allowedRichText_field]);
 							}
 						}
 						
-						$this->ipbwi->cache->save('memberInfo', $userID, $info);
+						Ipbwi::instance()->cache->save('memberInfo', $userID, $info);
 						return $info;
 					}
 				}
 			}
 			// Check for cache - if exists don't bother getting it again
-			if($cache = $this->ipbwi->cache->get('memberInfo',$userID)){
+			if($cache = Ipbwi::instance()->cache->get('memberInfo',$userID)){
 				return $cache;
 			}else{
 				// Return user info if UID given
 				$info = \IPSMember::load($userID);
-				$this->ipbwi->cache->save('memberInfo', $userID, $info);
+				Ipbwi::instance()->cache->save('memberInfo', $userID, $info);
 				return $info;
 			}
 		}
@@ -195,8 +224,8 @@
 		public function name2id($names){
 			if(is_array($names)){
 				foreach($names as $i => $j){
-					$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT member_id FROM '.$this->ipbwi->board['sql_tbl_prefix'].'members WHERE LOWER(name)="'.$this->ipbwi->makeSafe(strtolower(trim($names))).'"');
-					if($row = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+					$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT member_id FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'members WHERE LOWER(name)="'.Ipbwi::instance()->makeSafe(strtolower(trim($names))).'"');
+					if($row = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 						$ids[$i] = $row['member_id'];
 					}else{
 						$ids[$i] = false;
@@ -204,8 +233,8 @@
 				}
 				return $ids;
 			}else{
-				$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT member_id FROM '.$this->ipbwi->board['sql_tbl_prefix'].'members WHERE LOWER(name)="'.$this->ipbwi->makeSafe(strtolower(trim($names))).'"');
-				if($row = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+				$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT member_id FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'members WHERE LOWER(name)="'.Ipbwi::instance()->makeSafe(strtolower(trim($names))).'"');
+				if($row = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 					return $row['member_id'];
 				}else{
 					return false;
@@ -227,8 +256,8 @@
 		public function id2name($userIDs){
 			if(is_array($userIDs)){
 				foreach($userIDs as $i => $j){
-					$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT name FROM '.$this->ipbwi->board['sql_tbl_prefix'].'members WHERE member_id="'.$this->ipbwi->makeSafe(trim($userIDs)).'"');
-					if($row = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+					$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT name FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'members WHERE member_id="'.Ipbwi::instance()->makeSafe(trim($userIDs)).'"');
+					if($row = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 						$names[$i] = $row['name'];
 					}else{
 						$names[$i] = false;
@@ -236,8 +265,8 @@
 				}
 				return $ids;
 			}else{
-				$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT name FROM '.$this->ipbwi->board['sql_tbl_prefix'].'members WHERE member_id="'.$this->ipbwi->makeSafe(trim($userIDs)).'"');
-				if($row = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+				$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT name FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'members WHERE member_id="'.Ipbwi::instance()->makeSafe(trim($userIDs)).'"');
+				if($row = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 					return $row['name'];
 				}else{
 					return false;
@@ -259,8 +288,8 @@
 		public function displayname2id($names){
 			if(is_array($names)){
 				foreach($names as $i => $j){
-					$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT member_id FROM '.$this->ipbwi->board['sql_tbl_prefix'].'members WHERE LOWER(members_display_name)="'.$this->ipbwi->makeSafe(strtolower(trim($j))).'"');
-					if($row = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+					$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT member_id FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'members WHERE LOWER(members_display_name)="'.Ipbwi::instance()->makeSafe(strtolower(trim($j))).'"');
+					if($row = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 						$ids[$i] = $row['member_id'];
 					}else{
 						$ids[$i] = false;
@@ -268,8 +297,8 @@
 				}
 				return $ids;
 			}else{
-				$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT member_id FROM '.$this->ipbwi->board['sql_tbl_prefix'].'members WHERE LOWER(members_display_name)="'.$this->ipbwi->makeSafe(strtolower(trim($names))).'"');
-				if($row = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+				$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT member_id FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'members WHERE LOWER(members_display_name)="'.Ipbwi::instance()->makeSafe(strtolower(trim($names))).'"');
+				if($row = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 					return $row['member_id'];
 				}else{
 					return false;
@@ -291,8 +320,8 @@
 		public function id2displayname($userIDs){
 			if(is_array($userIDs)){
 				foreach($userIDs as $i => $j){
-					$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT members_display_name FROM '.$this->ipbwi->board['sql_tbl_prefix'].'members WHERE member_id="'.$this->ipbwi->makeSafe(trim($userIDs)).'"');
-					if($row = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+					$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT members_display_name FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'members WHERE member_id="'.Ipbwi::instance()->makeSafe(trim($userIDs)).'"');
+					if($row = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 						$names[$i] = $row['members_display_name'];
 					}else{
 						$names[$i] = false;
@@ -300,8 +329,8 @@
 				}
 				return $ids;
 			}else{
-				$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT members_display_name FROM '.$this->ipbwi->board['sql_tbl_prefix'].'members WHERE member_id="'.$this->ipbwi->makeSafe(trim($userIDs)).'"');
-				if($row = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+				$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT members_display_name FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'members WHERE member_id="'.Ipbwi::instance()->makeSafe(trim($userIDs)).'"');
+				if($row = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 					return $row['members_display_name'];
 				}else{
 					return false;
@@ -323,8 +352,8 @@
 		public function email2id($emails){
 			if(is_array($emails)){
 				foreach($emails as $i => $j){
-					$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT member_id FROM '.$this->ipbwi->board['sql_tbl_prefix'].'members WHERE LOWER(email)="'.strtolower($j).'"');
-					if($row = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+					$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT member_id FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'members WHERE LOWER(email)="'.strtolower($j).'"');
+					if($row = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 						$ids[$i] = $row['member_id'];
 					}else{
 						$ids[$i] = false;
@@ -332,8 +361,8 @@
 				}
 				return $ids;
 			}else{
-				$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT member_id FROM '.$this->ipbwi->board['sql_tbl_prefix'].'members WHERE LOWER(email)="'.strtolower($emails).'"');
-				if($row = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+				$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT member_id FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'members WHERE LOWER(email)="'.strtolower($emails).'"');
+				if($row = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 					return $row['member_id'];
 				}else{
 					return false;
@@ -373,22 +402,22 @@
 			if($validate !== false){
 				$member['reg_auth_type']	= $validate;
 			}else{
-				$member['reg_auth_type']	= $this->ipbwi->getBoardVar('reg_auth_type');
+				$member['reg_auth_type']	= Ipbwi::instance()->getBoardVar('reg_auth_type');
 			}
 			$member['bot_antispam_type'] = (($captchaCheck != '') ? $captchaCheck : 'none');
-			$this->ipbwi->ips_wrapper->register->create($member);
+			Ipbwi_IpsWrapper::instance()->register->create($member);
 
-			if(isset($this->ipbwi->ips_wrapper->register->errors)){
-				foreach($this->ipbwi->ips_wrapper->register->errors as $field => $error){
+			if(isset(Ipbwi_IpsWrapper::instance()->register->errors)){
+				foreach(Ipbwi_IpsWrapper::instance()->register->errors as $field => $error){
 					if($error[0] != null){
-						$field = $this->ipbwi->getLibLang('reg_'.$field);
-						$this->ipbwi->addSystemMessage('Error',$field.$error[0],'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+						$field = Ipbwi::instance()->getLibLang('reg_'.$field);
+						Ipbwi::instance()->addSystemMessage('Error',$field.$error[0],'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					}elseif(is_array($error)){
 						foreach($error as $text){
-							$this->ipbwi->addSystemMessage('Error',$text,'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+							Ipbwi::instance()->addSystemMessage('Error',$text,'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 						}
 					}else{
-						$this->ipbwi->addSystemMessage('Error',$error,'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+						Ipbwi::instance()->addSystemMessage('Error',$error,'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					}
 				}
 				return false;
@@ -412,7 +441,7 @@
 		 */
 		 
 		public function delete($userIDs=false,$password=false){
-			$this->ipbwi->ips_wrapper->memberDelete($userIDs);
+			Ipbwi_IpsWrapper::instance()->memberDelete($userIDs);
 		}
 		/**
 		 * @desc			Grab a list of custom profile fields, and their properties.
@@ -426,17 +455,17 @@
 		 */
 		public function listCustomFields(){
 			// Check for cache...
-			if($cache = $this->ipbwi->cache->get('listCustomFields', 1)){
+			if($cache = Ipbwi::instance()->cache->get('listCustomFields', 1)){
 				return $cache;
 			}else{
-				$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT * FROM '.$this->ipbwi->board['sql_tbl_prefix'].'pfields_data ORDER BY pf_id');
-				if($this->ipbwi->ips_wrapper->DB->getTotalRows($sql) == 0){
+				$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT * FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'pfields_data ORDER BY pf_id');
+				if(Ipbwi_IpsWrapper::instance()->DB->getTotalRows($sql) == 0){
 					return false;
 				}else{
-					while($info = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+					while($info = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 						$fields['field_'.$info['pf_id']] = $info;
 					}
-					$this->ipbwi->cache->save('listCustomFields', 1, $fields);
+					Ipbwi::instance()->cache->save('listCustomFields', 1, $fields);
 					return $fields;
 				}
 			}
@@ -517,7 +546,7 @@
 			// Check we are logged in and can update profiles
 			$info = $this->info($userID);
 			if((!$this->isLoggedin() OR !$info['g_edit_profile']) AND !$bypassPerms){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			if(isset($update['members_display_name'])){
@@ -528,11 +557,11 @@
 			}
 			
 			// make richtext fine for db save
-			$this->ipbwi->ips_wrapper->parser->parse_bbcode		= $row['use_ibc'];
-			$this->ipbwi->ips_wrapper->parser->strip_quotes		= 0;
-			$this->ipbwi->ips_wrapper->parser->parse_nl2br		= 0;
-			$this->ipbwi->ips_wrapper->parser->parse_html		= 0;
-			$this->ipbwi->ips_wrapper->parser->parse_smilies	= 1;
+			Ipbwi_IpsWrapper::instance()->parser->parse_bbcode		= $row['use_ibc'];
+			Ipbwi_IpsWrapper::instance()->parser->strip_quotes		= 0;
+			Ipbwi_IpsWrapper::instance()->parser->parse_nl2br		= 0;
+			Ipbwi_IpsWrapper::instance()->parser->parse_html		= 0;
+			Ipbwi_IpsWrapper::instance()->parser->parse_smilies	= 1;
 			
 			// Array of allowed array keys in $update we can update
 			$allowed				= array('members_display_name','members_l_display_name','title','allow_admin_mails','hide_email', 'email_pm', 'skin','language','view_sigs', 'view_img', 'view_avs', 'view_pop', 'bday_day', 'bday_month', 'bday_year', 'dst_in_use','email');
@@ -549,7 +578,7 @@
 				foreach($update as $i => $j){
 					if(in_array($i, $allowed)){
 						// We can do this!!!!
-						$update[$i] = $this->ipbwi->makeSafe($j);
+						$update[$i] = Ipbwi::instance()->makeSafe($j);
 						$cache_update[$i] = $j;
 						if($sql){
 							$sql .= ','.$i.'="'.$update[$i].'"';
@@ -559,7 +588,7 @@
 					}
 					if(in_array($i, $ppAllowed)){
 						// We can do this!!!!
-						$ppUpdate[$i] = $this->ipbwi->makeSafe($j);
+						$ppUpdate[$i] = Ipbwi::instance()->makeSafe($j);
 						$cache_ppUpdate[$i] = $j;
 						if(isset($ppSQLupdate) && $ppSQLupdate != ''){
 							$ppSQLupdate .= ','.$i.'="'.$ppUpdate[$i].'"';
@@ -574,21 +603,21 @@
 				if($sql || $meSQL || $ppSQL){
 					// Update in Database
 					if($sql){
-						$query = 'UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'members SET '.$sql.' WHERE member_id="'.$userID.'"';
-						$this->ipbwi->ips_wrapper->DB->query($query);
+						$query = 'UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'members SET '.$sql.' WHERE member_id="'.$userID.'"';
+						Ipbwi_IpsWrapper::instance()->DB->query($query);
 					}
 					if($meSQL){
-						$query = 'UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'members SET '.$meSQL.' WHERE member_id="'.$userID.'"';
-						$this->ipbwi->ips_wrapper->DB->query($query);
+						$query = 'UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'members SET '.$meSQL.' WHERE member_id="'.$userID.'"';
+						Ipbwi_IpsWrapper::instance()->DB->query($query);
 					}
 					if($ppsqlInsert && $ppSQLupdate){
-						$query = 'INSERT INTO '.$this->ipbwi->board['sql_tbl_prefix'].'profile_portal (pp_member_id'.$ppsqlInsert['fields'].') VALUES("'.$userID.'"'.$ppsqlInsert['values'].') ON DUPLICATE KEY UPDATE '.$ppSQLupdate;
-						$this->ipbwi->ips_wrapper->DB->query($query);
+						$query = 'INSERT INTO '.Ipbwi::instance()->board['sql_tbl_prefix'].'profile_portal (pp_member_id'.$ppsqlInsert['fields'].') VALUES("'.$userID.'"'.$ppsqlInsert['values'].') ON DUPLICATE KEY UPDATE '.$ppSQLupdate;
+						Ipbwi_IpsWrapper::instance()->DB->query($query);
 					}
 					// Update in get_advinfo() cache.
 					if(isset($update)) $info = array_merge($info, $cache_update);
 					if(isset($ppUpdate)) $info = array_merge($info, $cache_ppUpdate);
-					$this->ipbwi->cache->save('memberInfo', $userID, $info);
+					Ipbwi::instance()->cache->save('memberInfo', $userID, $info);
 					return true;
 				}
 			}
@@ -618,15 +647,15 @@
 			// Check we are logged in
 			$info = $this->info($userID);
 			if(!$this->isLoggedIn() && empty($userID)){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			if(empty($newPass) OR strlen($newPass) < 3 OR strlen($newPass) > 32){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('accPass'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('accPass'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			// update password
-			if($this->ipbwi->ips_wrapper->changePW($newPass,$info,$currentPass)){
+			if(Ipbwi_IpsWrapper::instance()->changePW($newPass,$info,$currentPass)){
 				return true;
 			}else{
 				return false;
@@ -649,7 +678,7 @@
 		 */
 		public function updateCustomField($ID, $newValue, $bypassPerms = false, $memberID = false){
 			if(empty($memberID)){
-				$memberID = $this->ipbwi->member->myInfo['member_id'];
+				$memberID = Ipbwi::instance()->member->myInfo['member_id'];
 			}
 			$fieldinfo = $this->listCustomFields($memberID);
 			if($info = $fieldinfo['field_' . $ID]){
@@ -662,22 +691,22 @@
 							$allowed[] = $k['0'];
 						}
 						if(!in_array($newValue, $allowed)){
-							$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('cfInvalidValue'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+							Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('cfInvalidValue'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 							return false;
 						}
 					}
 					if($info['pf_not_null'] AND !$newValue){
-						$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('cfMustFillIn'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+						Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('cfMustFillIn'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 						return false;
 					}
-					$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'pfields_content SET field_'.$ID.'="'.$newValue.'" WHERE member_id="'.$memberID.'"');
+					Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'pfields_content SET field_'.$ID.'="'.$newValue.'" WHERE member_id="'.$memberID.'"');
 					return true;
 				}else{
-					$this->ipbwi->addSystemMessage('Error',sprintf($this->ipbwi->getLibLang('cfCantEdit'), $ID),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					Ipbwi::instance()->addSystemMessage('Error',sprintf(Ipbwi::instance()->getLibLang('cfCantEdit'), $ID),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					return false;
 				}
 			}else{
-				$this->ipbwi->addSystemMessage('Error',sprintf($this->ipbwi->getLibLang('cfNotExist'), $ID),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',sprintf(Ipbwi::instance()->getLibLang('cfNotExist'), $ID),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 		}
@@ -694,21 +723,21 @@
 		 */
 		public function updateSig($newSig){
 			if(!$this->isLoggedIn()){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
-			if(strlen($newSig) > $this->ipbwi->ips_wrapper->settings['max_sig_length']){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('sigTooLong'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+			if(strlen($newSig) > Ipbwi_IpsWrapper::instance()->settings['max_sig_length']){
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('sigTooLong'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
-			if($this->ipbwi->ips_wrapper->settings['sig_allow_ibc']){
-				$this->ipbwi->ips_wrapper->parser->parse_html		= $this->ipbwi->ips_wrapper->settings['sig_allow_html'];
-				$this->ipbwi->ips_wrapper->parser->parse_bbcode		= $this->ipbwi->ips_wrapper->settings['sig_allow_ibc'];
-				$this->ipbwi->ips_wrapper->parser->strip_quotes		= 1;
-				$this->ipbwi->ips_wrapper->parser->parse_nl2br		= 1;
-				$newSig = $this->ipbwi->ips_wrapper->parser->preDbParse(stripslashes($newSig));
+			if(Ipbwi_IpsWrapper::instance()->settings['sig_allow_ibc']){
+				Ipbwi_IpsWrapper::instance()->parser->parse_html		= Ipbwi_IpsWrapper::instance()->settings['sig_allow_html'];
+				Ipbwi_IpsWrapper::instance()->parser->parse_bbcode		= Ipbwi_IpsWrapper::instance()->settings['sig_allow_ibc'];
+				Ipbwi_IpsWrapper::instance()->parser->strip_quotes		= 1;
+				Ipbwi_IpsWrapper::instance()->parser->parse_nl2br		= 1;
+				$newSig = Ipbwi_IpsWrapper::instance()->parser->preDbParse(stripslashes($newSig));
 			}
-			$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'profile_portal SET signature="'.$this->ipbwi->makeSafe($newSig).'" WHERE pp_member_id="'.$this->ipbwi->member->myInfo['member_id'].'"');
+			Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'profile_portal SET signature="'.Ipbwi::instance()->makeSafe($newSig).'" WHERE pp_member_id="'.Ipbwi::instance()->member->myInfo['member_id'].'"');
 			return true;
 		}
 		/**
@@ -725,49 +754,49 @@
 		 * @since			2.01
 		 */
 		public function updateAvatar($fieldName='avatar_new',$deleteAvatar=false){
-			if(!$this->isLoggedIn() && $this->ipbwi->getBoardVar('avatars_on') != 1){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+			if(!$this->isLoggedIn() && Ipbwi::instance()->getBoardVar('avatars_on') != 1){
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			$member = $this->info();
 			// Remove Photo
 			if($deleteAvatar != false){
 				$location = explode(':',$member['avatar_location']);
-				if($this->ipbwi->member->updateMember(array('avatar_type' => '', 'avatar_location' => '', 'avatar_size' => ''))){
+				if(Ipbwi::instance()->member->updateMember(array('avatar_type' => '', 'avatar_location' => '', 'avatar_size' => ''))){
 					if($location[0] == 'upload'){
-						unlink($this->ipbwi->getBoardVar('upload_dir').$location[1]);
+						unlink(Ipbwi::instance()->getBoardVar('upload_dir').$location[1]);
 					}
-					$this->ipbwi->addSystemMessage('Success', $this->ipbwi->getLibLang('avatarSuccess'), 'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					Ipbwi::instance()->addSystemMessage('Success', Ipbwi::instance()->getLibLang('avatarSuccess'), 'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					return true;
 				}else{
-					$this->ipbwi->addSystemMessage('Error', $this->ipbwi->getLibLang('avatarError'), 'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					Ipbwi::instance()->addSystemMessage('Error', Ipbwi::instance()->getLibLang('avatarError'), 'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					return false;
 				}
-			}elseif(isset($_FILES[$fieldName]['size']) && $_FILES[$fieldName]['size'] > 0 && ($_FILES[$fieldName]['size'] <= ($this->ipbwi->getBoardVar('avup_size_max')*1024)) && $deleteAvatar == false){
+			}elseif(isset($_FILES[$fieldName]['size']) && $_FILES[$fieldName]['size'] > 0 && ($_FILES[$fieldName]['size'] <= (Ipbwi::instance()->getBoardVar('avup_size_max')*1024)) && $deleteAvatar == false){
 				/*
 				 * @todo implement check of [avatar_ext] => gif,jpg,jpeg,png
 				 */
 				$file_ext = strtolower(substr($_FILES[$fieldName]['name'],strrpos($_FILES[$fieldName]['name'],'.'))); // exclude file extension of the name
 				$avatarname = 'av-'.$member['id'].$file_ext; // define avatarname
-				$target_location = $this->ipbwi->getBoardVar('upload_dir').$avatarname; // define target url
+				$target_location = Ipbwi::instance()->getBoardVar('upload_dir').$avatarname; // define target url
 				list($width, $height, $type, $attr) = getimagesize($_FILES[$fieldName]['tmp_name']); // get avatar proberties
-				$avatar_dims = explode('x',$this->ipbwi->getBoardVar('avatar_dims'));
+				$avatar_dims = explode('x',Ipbwi::instance()->getBoardVar('avatar_dims'));
 				if($width <= $avatar_dims[0] && $height <= $avatar_dims[1]){
 					if(move_uploaded_file($_FILES[$fieldName]['tmp_name'],$target_location)){ // move uploaded avatar to target
 						$avatar_img_size = $width.'x'.$height; // merge avatarsize to IPB compatible format
-						if($this->ipbwi->member->updateMember(array('avatar_type' => 'upload', 'avatar_location' => 'upload:'.$avatarname, 'avatar_size' => $avatar_img_size))){
-							$this->ipbwi->addSystemMessage('Success', $this->ipbwi->getLibLang('avatarSuccess'), 'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+						if(Ipbwi::instance()->member->updateMember(array('avatar_type' => 'upload', 'avatar_location' => 'upload:'.$avatarname, 'avatar_size' => $avatar_img_size))){
+							Ipbwi::instance()->addSystemMessage('Success', Ipbwi::instance()->getLibLang('avatarSuccess'), 'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 							return true;
 						}else{
-							$this->ipbwi->addSystemMessage('Error', $this->ipbwi->getLibLang('avatarError'), 'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+							Ipbwi::instance()->addSystemMessage('Error', Ipbwi::instance()->getLibLang('avatarError'), 'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 							return false;
 						}
 					}else{
-						$this->ipbwi->addSystemMessage('Error', $this->ipbwi->getLibLang('avatarError'), 'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+						Ipbwi::instance()->addSystemMessage('Error', Ipbwi::instance()->getLibLang('avatarError'), 'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 						return false;
 					}
 				}else{
-					$this->ipbwi->addSystemMessage('Error', $this->ipbwi->getLibLang('avatarError'), 'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					Ipbwi::instance()->addSystemMessage('Error', Ipbwi::instance()->getLibLang('avatarError'), 'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					return false;
 				}
 			}else{
@@ -788,12 +817,12 @@
 		 */
 		public function updatePhoto($fieldName=false,$deletePhoto=false){
 			if(!$this->isLoggedIn()){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			
 			return false;
-			//$this->ipbwi->ips_wrapper->memberFunctions->uploadPhoto($this->lang->memberData['member_id']);
+			//Ipbwi_IpsWrapper::instance()->memberFunctions->uploadPhoto($this->lang->memberData['member_id']);
 			
 /*
 			// Remove Photo
@@ -805,7 +834,7 @@
 				}else{
 					$_POST['delete_photo'] = 0;
 				}
-				$deleted = $this->ipbwi->ips_wrapper->usercp->lib_upload_photo();
+				$deleted = Ipbwi_IpsWrapper::instance()->usercp->lib_upload_photo();
 				if($deleted['status'] == 'deleted'){
 					return true;
 				}else{
@@ -828,26 +857,26 @@
 					if($_FILES['upload_photo']['size'] < $max['0']*1024){
 						// check if file has right extension
 						$ext = strtolower(substr($_FILES['upload_photo']['name'],strrpos($_FILES['upload_photo']['name'],'.')));
-						$allowed_ext = explode(',',$this->ipbwi->ips_wrapper->vars['photo_ext']);
+						$allowed_ext = explode(',',Ipbwi_IpsWrapper::instance()->vars['photo_ext']);
 						if(in_array(str_replace('.','',$ext),$allowed_ext)){
-							$photo = $this->ipbwi->ips_wrapper->usercp->lib_upload_photo();
-							if($photo && $this->ipbwi->ips_wrapper->DB->query('INSERT INTO '.$this->ipbwi->board['sql_tbl_prefix'].'profile_portal (pp_member_id,pp_main_photo,pp_main_width,pp_main_height,pp_thumb_photo,pp_thumb_width,pp_thumb_height) VALUES ("'.$this->ipbwi->member->myInfo['member_id'].'","'.$photo['final_location'].'","'.$photo['final_width'].'","'.$photo['final_height'].'","'.$photo['t_final_location'].'","'.$photo['t_final_width'].'","'.$photo['t_final_height'].'") ON DUPLICATE KEY UPDATE pp_main_photo="'.$photo['final_location'].'", pp_main_width="'.$photo['final_width'].'", pp_main_height="'.$photo['final_height'].'", pp_thumb_photo="'.$photo['t_final_location'].'", pp_thumb_width="'.$photo['t_final_width'].'", pp_thumb_height="'.$photo['t_final_height'].'"')){
-							//if($photo && $this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'profile_portal SET pp_main_photo="'.$photo['final_location'].'", pp_main_width="'.$photo['final_width'].'", pp_main_height="'.$photo['final_height'].'", pp_thumb_photo="'.$photo['t_final_location'].'", pp_thumb_width="'.$photo['t_final_width'].'", pp_thumb_height="'.$photo['t_final_height'].'" WHERE pp_member_id="'.$this->ipbwi->member->myInfo['member_id'].'"')){
+							$photo = Ipbwi_IpsWrapper::instance()->usercp->lib_upload_photo();
+							if($photo && Ipbwi_IpsWrapper::instance()->DB->query('INSERT INTO '.Ipbwi::instance()->board['sql_tbl_prefix'].'profile_portal (pp_member_id,pp_main_photo,pp_main_width,pp_main_height,pp_thumb_photo,pp_thumb_width,pp_thumb_height) VALUES ("'.Ipbwi::instance()->member->myInfo['member_id'].'","'.$photo['final_location'].'","'.$photo['final_width'].'","'.$photo['final_height'].'","'.$photo['t_final_location'].'","'.$photo['t_final_width'].'","'.$photo['t_final_height'].'") ON DUPLICATE KEY UPDATE pp_main_photo="'.$photo['final_location'].'", pp_main_width="'.$photo['final_width'].'", pp_main_height="'.$photo['final_height'].'", pp_thumb_photo="'.$photo['t_final_location'].'", pp_thumb_width="'.$photo['t_final_width'].'", pp_thumb_height="'.$photo['t_final_height'].'"')){
+							//if($photo && Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'profile_portal SET pp_main_photo="'.$photo['final_location'].'", pp_main_width="'.$photo['final_width'].'", pp_main_height="'.$photo['final_height'].'", pp_thumb_photo="'.$photo['t_final_location'].'", pp_thumb_width="'.$photo['t_final_width'].'", pp_thumb_height="'.$photo['t_final_height'].'" WHERE pp_member_id="'.Ipbwi::instance()->member->myInfo['member_id'].'"')){
 								return true;
 							}else{
-								$this->ipbwi->addSystemMessage('Error','Upload failed: Database Update failed.','Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+								Ipbwi::instance()->addSystemMessage('Error','Upload failed: Database Update failed.','Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 								return false;
 							}
 						}else{
-							$this->ipbwi->addSystemMessage('Error','Upload failed: File-Extension is not allowed. Use one of the following: '.$this->ipbwi->ips_wrapper->vars['photo_ext'],'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+							Ipbwi::instance()->addSystemMessage('Error','Upload failed: File-Extension is not allowed. Use one of the following: '.Ipbwi_IpsWrapper::instance()->vars['photo_ext'],'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 							return false;
 						}
 					}else{
-						$this->ipbwi->addSystemMessage('Error','Upload failed: File is too big. '.round($_FILES['upload_photo']['size']/1024,2).' KB uploaded and '.$max['0'].' KB allowed.','Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+						Ipbwi::instance()->addSystemMessage('Error','Upload failed: File is too big. '.round($_FILES['upload_photo']['size']/1024,2).' KB uploaded and '.$max['0'].' KB allowed.','Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 						return false;
 					}
 				}else{
-					//$this->ipbwi->addSystemMessage('Error','Upload failed: File has size of 0 Bytes','Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					//Ipbwi::instance()->addSystemMessage('Error','Upload failed: File has size of 0 Bytes','Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					return false;
 				}
 			}
@@ -868,8 +897,8 @@
 		public function customFieldValue($fieldID, $userID = false){
 			$info = $this->info($userID);
 			if(isset($info['field_' . $fieldID]) && $info['field_' . $fieldID]){
-				$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT field_'.intval($fieldID).' FROM '.$this->ipbwi->board['sql_tbl_prefix'].'pfields_content WHERE member_id="'.$info['member_id'].'"');
-				if($field_info = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+				$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT field_'.intval($fieldID).' FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'pfields_content WHERE member_id="'.$info['member_id'].'"');
+				if($field_info = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 					return $info['field_'.$fieldID];
 				}else{
 					return false;
@@ -891,15 +920,15 @@
 		 */
 		public function rawSig($userID = false){
 			if(!$userID){
-				$userID = $this->ipbwi->member->myInfo['member_id'];
+				$userID = Ipbwi::instance()->member->myInfo['member_id'];
 			}
 			if($info = $this->info($userID)){
-				$this->ipbwi->ips_wrapper->parser->parse_nl2br			= 1;
-				$this->ipbwi->ips_wrapper->parser->parse_smilies		= 0;
-				$this->ipbwi->ips_wrapper->parser->parsing_signature	= 1;
-				$this->ipbwi->ips_wrapper->parser->parse_html			= $this->ipbwi->ips_wrapper->vars['sig_allow_html'];
-				$this->ipbwi->ips_wrapper->parser->parse_bbcode		= $this->ipbwi->ips_wrapper->vars['sig_allow_ibc'];
-				return $this->ipbwi->ips_wrapper->parser->pre_edit_parse($info['signature']);
+				Ipbwi_IpsWrapper::instance()->parser->parse_nl2br			= 1;
+				Ipbwi_IpsWrapper::instance()->parser->parse_smilies		= 0;
+				Ipbwi_IpsWrapper::instance()->parser->parsing_signature	= 1;
+				Ipbwi_IpsWrapper::instance()->parser->parse_html			= Ipbwi_IpsWrapper::instance()->vars['sig_allow_html'];
+				Ipbwi_IpsWrapper::instance()->parser->parse_bbcode		= Ipbwi_IpsWrapper::instance()->vars['sig_allow_ibc'];
+				return Ipbwi_IpsWrapper::instance()->parser->pre_edit_parse($info['signature']);
 			}else{
 				return false;
 			}
@@ -916,11 +945,11 @@
 		 */
 		public function numNewPosts(){
 			if(!$this->isLoggedIn()){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
-			$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT COUNT(pid) AS new FROM '.$this->ipbwi->board['sql_tbl_prefix'].'posts WHERE post_date > "'.$this->myInfo['last_visit'].'"');
-			if($posts = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+			$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT COUNT(pid) AS new FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'posts WHERE post_date > "'.$this->myInfo['last_visit'].'"');
+			if($posts = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 				return $posts['new'];
 			}else{
 				return false;
@@ -941,16 +970,16 @@
 			if($info = $this->info($ID)){
 				// Grab Pips
 				$pips = '0';
-				$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT * FROM '.$this->ipbwi->board['sql_tbl_prefix'].'titles ORDER BY pips ASC');
+				$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT * FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'titles ORDER BY pips ASC');
 				// Loop through pip numbers checking which is good
-				while($row = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+				while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 					if(isset($info['posts']) && $row['posts'] <= $info['posts']){
 						$pips = $row['pips'];
 					}
 				}
 				return $pips;
 			}else{
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('badMemID'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('badMemID'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 		}
@@ -967,18 +996,18 @@
 		 */
 		public function icon($userID = false){
 			if($info = $this->info($userID)){
-				$skinInfo = $this->ipbwi->skin->info($this->ipbwi->skin->id());
+				$skinInfo = Ipbwi::instance()->skin->info(Ipbwi::instance()->skin->id());
 				if($info['g_icon']){
 					// Use Group Icon
 					if(substr($info['g_icon'],0,7) == 'http://'){
-						$info['g_icon'] = '<img src="' . $info['g_icon'] . '" alt="'.$this->ipbwi->getLibLang('groupIcon').'" />';
-						$skinInfo = $this->ipbwi->skin->info($this->ipbwi->skin->id());
+						$info['g_icon'] = '<img src="' . $info['g_icon'] . '" alt="'.Ipbwi::instance()->getLibLang('groupIcon').'" />';
+						$skinInfo = Ipbwi::instance()->skin->info(Ipbwi::instance()->skin->id());
 						$skinInfo['set_image_dir'] = $skinInfo['set_image_dir'] ? $skinInfo['set_image_dir'] : '1';
 						$info['g_icon'] = str_replace("<#IMG_DIR#>",$skinInfo['set_image_dir'],$info['g_icon']);
 						return $info['g_icon'];
 					}else{
 						$skinInfo['set_image_dir'] = $skinInfo['set_image_dir'] ? $skinInfo['set_image_dir'] : '1';
-						$url = '<img src="'.$this->ipbwi->getBoardVar('url').$info['g_icon'].'" alt="'.$this->ipbwi->getLibLang('groupIcon').'" />';
+						$url = '<img src="'.Ipbwi::instance()->getBoardVar('url').$info['g_icon'].'" alt="'.Ipbwi::instance()->getLibLang('groupIcon').'" />';
 						$url = str_replace('<#IMG_DIR#>',$skinInfo['set_image_dir'],$url);
 						return $url;
 					}
@@ -988,13 +1017,13 @@
 					$pipsc = '';
 					while($pips > 0){
 						$skinInfo['set_image_dir'] = $skinInfo['set_image_dir'] ? $skinInfo['set_image_dir'] : '1';
-						$pipsc .= '<img src="'.$this->ipbwi->getBoardVar('url').'style_images/'.$skinInfo['set_image_dir'].'/pip.gif" alt="*" />';
+						$pipsc .= '<img src="'.Ipbwi::instance()->getBoardVar('url').'style_images/'.$skinInfo['set_image_dir'].'/pip.gif" alt="*" />';
 						$pips = $pips - '1';
 					}
 					return $pipsc;
 				}
 			}else{
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('badMemID'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('badMemID'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 		}
@@ -1025,24 +1054,24 @@
 		public function login($user=false,$pw=false,$cookie=true,$anon=false){
 			if(isset($user)){
 				$_POST['username'] = $user;
-				$this->ipbwi->ips_wrapper->request['username'] = $user;
+				Ipbwi_IpsWrapper::instance()->request['username'] = $user;
 			}
 			if(isset($pw)){
 				$_POST['password'] = $pw;
-				$this->ipbwi->ips_wrapper->request['password'] = \IPSText::parseCleanValue( urldecode($pw));
+				Ipbwi_IpsWrapper::instance()->request['password'] = \IPSText::parseCleanValue( urldecode($pw));
 			}
-			$status = $this->ipbwi->ips_wrapper->login->doLogin();
+			$status = Ipbwi_IpsWrapper::instance()->login->doLogin();
 			if(isset($status[2])){
 				$this->loggedIn = false;
-				$this->ipbwi->addSystemMessage('Error', $status[2], 'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error', $status[2], 'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 			}elseif($status[0] != ''){
 				$this->loggedIn = true;
 				$this->myInfo = $this->info($this->name2id($_POST['username']));
-				$this->ipbwi->addSystemMessage('Success', $status[0], 'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Success', $status[0], 'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return true;
 			}else{
 				$this->loggedIn = false;
-				$this->ipbwi->addSystemMessage('Error', 'Login failed but no error was send out.', 'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error', 'Login failed but no error was send out.', 'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 		}
@@ -1058,7 +1087,7 @@
 		 * @since			2.0
 		 */
 		public function logout(){
-			$status = @$this->ipbwi->ips_wrapper->login->doLogout(false); // @ todo: check notices from ip.board
+			$status = @Ipbwi_IpsWrapper::instance()->login->doLogout(false); // @ todo: check notices from ip.board
 			if(is_array($status) && count($status) > 0){
 				$this->loggedIn = false;
 				return true;
@@ -1077,7 +1106,7 @@
 		 * <br>'group' default: '*' all groups. You can specifiy a number or list of numbers
 		 * <br>'extra_groups' default: false no extra groups. Turn to true to get extra-groups, too.
 		 *
-		 * Sort keys: any field from '.$this->ipbwi->board['sql_tbl_prefix'].'members or '.$this->ipbwi->board['sql_tbl_prefix'].'groups.
+		 * Sort keys: any field from '.Ipbwi::instance()->board['sql_tbl_prefix'].'members or '.Ipbwi::instance()->board['sql_tbl_prefix'].'groups.
 		 * To avoid trouble ordering by a field 'xxx', use <b>m.XXX</b> or <b>g.XXX</b> as
 		 * the full qualified fieldname, not just 'xxx'.
 		 * @return	array	Members
@@ -1122,9 +1151,9 @@
 			}else{
 				$where = 'WHERE m.member_id != "0"';
 			}
-			$this->ipbwi->ips_wrapper->DB->query('SELECT m.*, g.*, cf.* FROM '.$this->ipbwi->board['sql_tbl_prefix'].'members m LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'groups g ON (m.member_group_id=g.g_id) LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'pfields_content cf ON (cf.member_id=m.member_id) '.$where.' ORDER BY '.$options['orderby'].' '.$options['order'].' '.$filter);
+			Ipbwi_IpsWrapper::instance()->DB->query('SELECT m.*, g.*, cf.* FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'members m LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'groups g ON (m.member_group_id=g.g_id) LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'pfields_content cf ON (cf.member_id=m.member_id) '.$where.' ORDER BY '.$options['orderby'].' '.$options['order'].' '.$filter);
 			$return = array();
-			while($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+			while($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 				$return[$row['member_id']] = $row;
 			}
 			return $return;
@@ -1148,19 +1177,19 @@
 		 */
 		public function listOnlineMembers($detailed = false, $formatted = false, $show_anon = false, $order_by = 'running_time', $order = 'DESC', $separator = ', '){
 			// Grab the cut-off length in minutes from the board settings
-			$cutoff = $this->ipbwi->ips_wrapper->vars['au_cutoff'] ? $this->ipbwi->ips_wrapper->vars['au_cutoff'] : '15';
+			$cutoff = Ipbwi_IpsWrapper::instance()->vars['au_cutoff'] ? Ipbwi_IpsWrapper::instance()->vars['au_cutoff'] : '15';
 			// Create a timestamp for the current time, and subtract the cut-off length to get a timestamp in the past
 			$timecutoff = time()-($cutoff * 60);
 			if($formatted){
 				// the $formatted param is true, so let's return an HTML list of display name links, separated by $separator
 				// if this function has already been run and has saved a cache, return the cached value from database for speed
-				if($online = $this->ipbwi->cache->get('listOnlineMembers', 'formatted') && isset($online) && is_array($online) && count($online) > 0){
+				if($online = Ipbwi::instance()->cache->get('listOnlineMembers', 'formatted') && isset($online) && is_array($online) && count($online) > 0){
 					// For each key in the $online array we just read from the database, set the value to the html formatted display name link
 					foreach($online as $key => $value){
 						// Grab advanced info for the member so we have the display name, prefix and suffix
 						$member = $this->info($value);
 						// Create the html-formatted string
-						$link = '<a href="'.$this->ipbwi->getBoardVar('url').'index.php?showuser='.$value.'">'.$member['prefix'].$member['members_display_name'].$member['suffix'].'</a>';
+						$link = '<a href="'.Ipbwi::instance()->getBoardVar('url').'index.php?showuser='.$value.'">'.$member['prefix'].$member['members_display_name'].$member['suffix'].'</a>';
 						$online[$key] = $link;
 					}
 					// Now we have an array full of html links... But that isn't very helpful to a PHP newbie. Lets just return an html string. Implode the array with $separator
@@ -1169,25 +1198,25 @@
 				}
 				// if we are happy to ignore logged-in members' requests to be anonymous, we need a slightly different database query.
 				if($show_anon){
-					$this->ipbwi->ips_wrapper->DB->query('SELECT member_id FROM '.$this->ipbwi->board['sql_tbl_prefix'].'sessions s WHERE s.member_id != "0" AND s.running_time > "'.$timecutoff.'" ORDER BY '.$order_by.' '.$order);
+					Ipbwi_IpsWrapper::instance()->DB->query('SELECT member_id FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'sessions s WHERE s.member_id != "0" AND s.running_time > "'.$timecutoff.'" ORDER BY '.$order_by.' '.$order);
 				}else{
 					// ok so this is the normal database query which should return the member IDs of all logged-in members. It does not return guests as they have no member ID :)
-					$this->ipbwi->ips_wrapper->DB->query('SELECT member_id FROM '.$this->ipbwi->board['sql_tbl_prefix'].'sessions s WHERE s.login_type != "1" AND s.member_id != "0" AND s.running_time > "'.$timecutoff.'" ORDER BY '.$order_by.' '.$order);
+					Ipbwi_IpsWrapper::instance()->DB->query('SELECT member_id FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'sessions s WHERE s.login_type != "1" AND s.member_id != "0" AND s.running_time > "'.$timecutoff.'" ORDER BY '.$order_by.' '.$order);
 				}
 				// For each result from the MySQL query, add the member's ID to the $options array with the key and value both equal to the member's ID
-				while($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+				while($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 					$ID = $row['member_id'];
 					$online[$ID] = $ID;
 				}
 				// We didn't do all that just to have to do it again next time. Cache the result to the database for speed next time.
-				$this->ipbwi->cache->save('listOnlineMembers', 'formatted', $online);
+				Ipbwi::instance()->cache->save('listOnlineMembers', 'formatted', $online);
 				// For each key in the $online array we just cached to the database, set the value to the html formatted display name link
 				if(isset($online) && is_array($online) && count($online) > 0){
 					foreach($online as $key => $value){
 						// Grab advanced info for the member so we have the display name, prefix and suffix
 						$member = $this->info($value);
 						// Create the html-formatted string
-						$link = '<a href="'.$this->ipbwi->getBoardVar('url').'index.php?showuser='.$value.'">'.$member['prefix'].$member['members_display_name'].$member['suffix'].'</a>';
+						$link = '<a href="'.Ipbwi::instance()->getBoardVar('url').'index.php?showuser='.$value.'">'.$member['prefix'].$member['members_display_name'].$member['suffix'].'</a>';
 						$online[$key] = $link;
 					}
 					// Now we have an array full of html links... But that isn't very helpful to a PHP newbie. Lets just return an html string. Implode the array with $separator
@@ -1201,7 +1230,7 @@
 			// if the $detailed param is true, return extra info :)
 			if($detailed){
 				// if this function has already been run and has saved a cache, return the cached value from database for speed
-				if($online = $this->ipbwi->cache->get('listOnlineMembers', 'nodetail') && isset($online) && is_array($online) && count($online) > 0){
+				if($online = Ipbwi::instance()->cache->get('listOnlineMembers', 'nodetail') && isset($online) && is_array($online) && count($online) > 0){
 					// For each key in the $online array we just read from the database, set the value to the result of get_advinfo(value)
 					foreach($online as $key => $value){
 						$online[$key] = $this->info($value);
@@ -1211,18 +1240,18 @@
 				}
 				// if we are happy to ignore logged-in members' requests to be anonymous, we need a slightly different database query.
 				if($show_anon){
-					$this->ipbwi->ips_wrapper->DB->query('SELECT member_id FROM '.$this->ipbwi->board['sql_tbl_prefix'].'sessions s WHERE s.member_id != "0" AND s.running_time > "'.$timecutoff.'" ORDER BY '.$order_by.' '.$order);
+					Ipbwi_IpsWrapper::instance()->DB->query('SELECT member_id FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'sessions s WHERE s.member_id != "0" AND s.running_time > "'.$timecutoff.'" ORDER BY '.$order_by.' '.$order);
 				}else{
 					// ok so this is the normal database query which should return the member IDs of all logged-in members. It does not return guests as they have no member ID :)
-					$this->ipbwi->ips_wrapper->DB->query('SELECT member_id FROM '.$this->ipbwi->board['sql_tbl_prefix'].'sessions s WHERE s.login_type != "1" AND s.member_id != "0" AND s.running_time > "'.$timecutoff.'" ORDER BY '.$order_by.' '.$order);
+					Ipbwi_IpsWrapper::instance()->DB->query('SELECT member_id FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'sessions s WHERE s.login_type != "1" AND s.member_id != "0" AND s.running_time > "'.$timecutoff.'" ORDER BY '.$order_by.' '.$order);
 				}
 				// For each result from the MySQL query, add the member's ID to the $options array with the key and value both equal to the member's ID
-				while($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+				while($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 					$ID = $row['member_id'];
 					$online[$ID] = $ID;
 				}
 				// We didn't do all that just to have to do it again next time. Cache the result to the database for speed next time.
-				$this->ipbwi->cache->save('listOnlineMembers', 'nodetail', $online);
+				Ipbwi::instance()->cache->save('listOnlineMembers', 'nodetail', $online);
 				// For each key in the $online array we just cached to the database, set the value to the result of get_advinfo(value)
 				if(isset($online) && is_array($online) && count($online) > 0){
 					foreach($online as $key => $value){
@@ -1236,23 +1265,23 @@
 			}
 			// neither $detailed or $formatted are true, so return a simple list
 			// if this function has already been run and has saved a cache, return the cached value from database for speed
-			if($online = $this->ipbwi->cache->get('listOnlineMembers', 'simple')){
+			if($online = Ipbwi::instance()->cache->get('listOnlineMembers', 'simple')){
 				return $online;
 			}
 			// if we are happy to ignore logged-in members' requests to be anonymous, we need a slightly different database query.
 			if($show_anon){
-				$this->ipbwi->ips_wrapper->DB->query('SELECT member_id FROM '.$this->ipbwi->board['sql_tbl_prefix'].'sessions s WHERE s.member_id != "0" AND s.running_time > "'.$timecutoff.'" ORDER BY '.$order_by.' '.$order);
+				Ipbwi_IpsWrapper::instance()->DB->query('SELECT member_id FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'sessions s WHERE s.member_id != "0" AND s.running_time > "'.$timecutoff.'" ORDER BY '.$order_by.' '.$order);
 			}else{
 				// ok so this is the normal database query which should return the member IDs of all logged-in members. It does not return guests as they have no member ID :)
-				$this->ipbwi->ips_wrapper->DB->query('SELECT member_id FROM '.$this->ipbwi->board['sql_tbl_prefix'].'sessions s WHERE s.login_type != "1" AND s.member_id != "0" AND s.running_time > "'.$timecutoff.'" ORDER BY '.$order_by.' '.$order);
+				Ipbwi_IpsWrapper::instance()->DB->query('SELECT member_id FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'sessions s WHERE s.login_type != "1" AND s.member_id != "0" AND s.running_time > "'.$timecutoff.'" ORDER BY '.$order_by.' '.$order);
 			}
 			// For each result from the MySQL query, add the member's ID to the $options array with the key and value both equal to the member's ID
-			while($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+			while($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 				$ID = $row['member_id'];
 				$online[$ID] = $ID;
 			}
 			// We didn't do all that just to have to do it again next time. Cache the result to the database for speed next time.
-			$this->ipbwi->cache->save('listOnlineMembers', 'simple', $online);
+			Ipbwi::instance()->cache->save('listOnlineMembers', 'simple', $online);
 			// Finally, return the array
 			return $online;
 		}
@@ -1273,9 +1302,9 @@
 			if($where){
 				$where = 'WHERE '.$where;
 			}
-			$this->ipbwi->ips_wrapper->DB->query('SELECT * FROM '.$this->ipbwi->board['sql_tbl_prefix'].'members m LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'member_extra me ON (me.id=m.id)'.$where.' ORDER BY RAND() LIMIT '.intval($limit));
+			Ipbwi_IpsWrapper::instance()->DB->query('SELECT * FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'members m LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'member_extra me ON (me.id=m.id)'.$where.' ORDER BY RAND() LIMIT '.intval($limit));
 			$random = array();
-			while($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+			while($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 				$random[$row['id']] = $row;
 			}
 			return $random;
@@ -1293,11 +1322,11 @@
 		 */
 		public function removeFriend($userID){
 			if($this->isLoggedIn()){
-				$this->ipbwi->ips_wrapper->DB->query('DELETE FROM '.$this->ipbwi->board['sql_tbl_prefix'].'profile_friends WHERE friends_friend_id="'.intval($userID).'" AND friends_member_id="'.$this->ipbwi->member->myInfo['member_id'].'"');
-				if($this->ipbwi->ips_wrapper->DB->get_affected_rows()){
+				Ipbwi_IpsWrapper::instance()->DB->query('DELETE FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'profile_friends WHERE friends_friend_id="'.intval($userID).'" AND friends_member_id="'.Ipbwi::instance()->member->myInfo['member_id'].'"');
+				if(Ipbwi_IpsWrapper::instance()->DB->get_affected_rows()){
 					// recache
-					$this->ipbwi->ips_wrapper->pack_and_update_member_cache($this->ipbwi->member->myInfo['member_id'], array('friends' => $this->friendsList()));
-					$this->ipbwi->ips_wrapper->pack_and_update_member_cache(intval($userID), array('friends' => $this->friendsList(false,$userID)));
+					Ipbwi_IpsWrapper::instance()->pack_and_update_member_cache(Ipbwi::instance()->member->myInfo['member_id'], array('friends' => $this->friendsList()));
+					Ipbwi_IpsWrapper::instance()->pack_and_update_member_cache(intval($userID), array('friends' => $this->friendsList(false,$userID)));
 					return true;
 				}else{
 					return false;
@@ -1324,8 +1353,8 @@
 					return false;
 				}
 				// o_O. Firstly check if there is already an entry.
-				$this->ipbwi->ips_wrapper->DB->query('SELECT * FROM '.$this->ipbwi->board['sql_tbl_prefix'].'profile_friends WHERE friends_friend_id="'.intval($userID).'"AND friends_member_id="'.$this->ipbwi->member->myInfo['member_id'].'"');
-				if($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+				Ipbwi_IpsWrapper::instance()->DB->query('SELECT * FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'profile_friends WHERE friends_friend_id="'.intval($userID).'"AND friends_member_id="'.Ipbwi::instance()->member->myInfo['member_id'].'"');
+				if($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 					return true;
 				}else{
 					// We can just add an entry because theres nothing there.
@@ -1333,10 +1362,10 @@
 					// support for moderate_friends-field have to be added (including sending confirmation message)
 					//if($friend['pp_setting_moderate_friends']) $friends_approved = 0; else $friends_approved = 1;
 					$friends_approved = 1;
-					if($this->ipbwi->ips_wrapper->DB->query('INSERT INTO '.$this->ipbwi->board['sql_tbl_prefix'].'profile_friends VALUES ("", "'.$this->ipbwi->member->myInfo['member_id'].'","'.intval($userID).'","'.$friends_approved.'", "'.time().'")')){
+					if(Ipbwi_IpsWrapper::instance()->DB->query('INSERT INTO '.Ipbwi::instance()->board['sql_tbl_prefix'].'profile_friends VALUES ("", "'.Ipbwi::instance()->member->myInfo['member_id'].'","'.intval($userID).'","'.$friends_approved.'", "'.time().'")')){
 						// recache
-						$this->ipbwi->ips_wrapper->pack_and_update_member_cache($this->ipbwi->member->myInfo['member_id'], array('friends' => $this->friendsList()));
-						$this->ipbwi->ips_wrapper->pack_and_update_member_cache(intval($userID), array('friends' => $this->friendsList(false,$userID)));
+						Ipbwi_IpsWrapper::instance()->pack_and_update_member_cache(Ipbwi::instance()->member->myInfo['member_id'], array('friends' => $this->friendsList()));
+						Ipbwi_IpsWrapper::instance()->pack_and_update_member_cache(intval($userID), array('friends' => $this->friendsList(false,$userID)));
 					}
 					return true;
 				}
@@ -1363,7 +1392,7 @@
 			if(is_string($userID)) {
 				$member = intval($userID);
 			}elseif($this->isLoggedIn()){
-				$member = $this->ipbwi->member->myInfo['member_id'];
+				$member = Ipbwi::instance()->member->myInfo['member_id'];
 			}else{
 				return false;
 			}
@@ -1371,9 +1400,9 @@
 			if(empty($unapproved)){
 				$approved = ' AND friends_approved="1"';
 			}
-			$this->ipbwi->ips_wrapper->DB->query('SELECT * FROM '.$this->ipbwi->board['sql_tbl_prefix'].'profile_friends WHERE friends_member_id="'.$member.'"'.$approved);
+			Ipbwi_IpsWrapper::instance()->DB->query('SELECT * FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'profile_friends WHERE friends_member_id="'.$member.'"'.$approved);
 			$friends = array();
-			while($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+			while($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 				$friends[$row['friends_id']] = $row;
 			}
 			// check for details

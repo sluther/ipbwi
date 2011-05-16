@@ -9,7 +9,7 @@
 	 * @license			http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License
 	 */
 	namespace Ipbwi;
-	class Ipbwi_Blog extends Ipbwi {
+	class Ipbwi_Blog {
 		private $ipbwi			= null;
 		public $installed		= false;
 		public $online			= false;
@@ -22,12 +22,12 @@
 		 */
 		public function __construct($ipbwi){
 			// loads common classes
-			$this->ipbwi = $ipbwi;
+			Ipbwi::instance()-> = $ipbwi;
 
 			// check if IP.gallery is installed
-			$query = $this->ipbwi->ips_wrapper->DB->query('SELECT conf_value,conf_default FROM '.$this->ipbwi->board['sql_tbl_prefix'].'core_sys_conf_settings WHERE conf_key="blog_online"');
-			if($this->ipbwi->ips_wrapper->DB->getTotalRows($query) != 0){
-				$data = $this->ipbwi->ips_wrapper->DB->fetch($query);
+			$query = Ipbwi_IpsWrapper::instance()->DB->query('SELECT conf_value,conf_default FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'core_sys_conf_settings WHERE conf_key="blog_online"');
+			if(Ipbwi_IpsWrapper::instance()->DB->getTotalRows($query) != 0){
+				$data = Ipbwi_IpsWrapper::instance()->DB->fetch($query);
 				// retrieve Gallery URL
 				$this->online = (($data['conf_value'] != '') ? $data['conf_value'] : $data['conf_default']);
 				$this->installed = true;
@@ -66,18 +66,18 @@
 				}
 
 				// get latest blog entries
-				$query = $this->ipbwi->ips_wrapper->DB->query('SELECT e.*,b.* FROM '.$this->ipbwi->board['sql_tbl_prefix'].'blog_entries e LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'blog_blogs b ON (b.blog_id=e.blog_id) WHERE e.entry_status="published"'.$blogQuery.' ORDER BY e.entry_id DESC LIMIT '.intval($settings['start']).','.intval($settings['limit']));
-				if($this->ipbwi->ips_wrapper->DB->getTotalRows($query) == 0){
+				$query = Ipbwi_IpsWrapper::instance()->DB->query('SELECT e.*,b.* FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'blog_entries e LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'blog_blogs b ON (b.blog_id=e.blog_id) WHERE e.entry_status="published"'.$blogQuery.' ORDER BY e.entry_id DESC LIMIT '.intval($settings['start']).','.intval($settings['limit']));
+				if(Ipbwi_IpsWrapper::instance()->DB->getTotalRows($query) == 0){
 					return false;
 				}
 				$data = array();
-				while($row = $this->ipbwi->ips_wrapper->DB->fetch($query)){
-					$row['entry_author_name']	= $this->ipbwi->properXHTML($row['entry_author_name']);
-					$row['entry_name']			= $this->ipbwi->properXHTML($row['entry_name']);
-					$row['entry']				= $this->ipbwi->properXHTML($row['entry']);
-					$row['entry_edit_name']		= $this->ipbwi->properXHTML($row['entry_edit_name']);
-					$row['blog_name']			= $this->ipbwi->properXHTML($row['blog_name']);
-					$row['blog_desc']			= $this->ipbwi->properXHTML($row['blog_desc']);
+				while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($query)){
+					$row['entry_author_name']	= Ipbwi::instance()->properXHTML($row['entry_author_name']);
+					$row['entry_name']			= Ipbwi::instance()->properXHTML($row['entry_name']);
+					$row['entry']				= Ipbwi::instance()->properXHTML($row['entry']);
+					$row['entry_edit_name']		= Ipbwi::instance()->properXHTML($row['entry_edit_name']);
+					$row['blog_name']			= Ipbwi::instance()->properXHTML($row['blog_name']);
+					$row['blog_desc']			= Ipbwi::instance()->properXHTML($row['blog_desc']);
 					$data[] = $row;
 				}
 				return $data;

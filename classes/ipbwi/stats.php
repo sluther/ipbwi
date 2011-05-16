@@ -9,7 +9,7 @@
 	 * @license			http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License
 	 */
 	namespace Ipbwi;
-	class Ipbwi_Stats extends Ipbwi {
+	class Ipbwi_Stats {
 		private $ipbwi			= null;
 		/**
 		 * @desc			Loads and checks different vars when class is initiating
@@ -19,7 +19,7 @@
 		 */
 		public function __construct($ipbwi){
 			// loads common classes
-			$this->ipbwi = $ipbwi;
+			Ipbwi::instance()-> = $ipbwi;
 		}
 		/**
 		 * @desc			Gets board statistics.
@@ -33,13 +33,13 @@
 		 */
 		public function board(){
 			// Check for cache
-			if($cache = $this->ipbwi->cache->get('statsBoard', '1')){
+			if($cache = Ipbwi::instance()->cache->get('statsBoard', '1')){
 				return $cache;
 			}else{
-				$this->ipbwi->ips_wrapper->DB->query('SELECT cs_value FROM '.$this->ipbwi->board['sql_tbl_prefix'].'cache_store WHERE cs_key = "stats"');
-				$row = $this->ipbwi->ips_wrapper->DB->fetch();
+				Ipbwi_IpsWrapper::instance()->DB->query('SELECT cs_value FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'cache_store WHERE cs_key = "stats"');
+				$row = Ipbwi_IpsWrapper::instance()->DB->fetch();
 				$stats = unserialize(stripslashes($row['cs_value']));
-				$this->ipbwi->cache->save('statsBoard', 1, $stats);
+				Ipbwi::instance()->cache->save('statsBoard', 1, $stats);
 				return $stats;
 			}
 		}
@@ -54,26 +54,26 @@
 		 * @since			2.01
 		 */
 		 function activeCount() {
-			if($cache = $this->ipbwi->cache->get('activeCount', '1')){
+			if($cache = Ipbwi::instance()->cache->get('activeCount', '1')){
 				return $cache;
 			}else{
 				// Init
 				$count = array('total' => '0', 'anon' => '0', 'guests' => '0', 'members' => '0');
-				$cutoff = $this->ipbwi->ips_wrapper->vars['au_cutoff'] ? $this->ipbwi->ips_wrapper->vars['au_cutoff'] : '15';
+				$cutoff = Ipbwi_IpsWrapper::instance()->vars['au_cutoff'] ? Ipbwi_IpsWrapper::instance()->vars['au_cutoff'] : '15';
 				$timecutoff = time() - ($cutoff * 60);
-				$this->ipbwi->ips_wrapper->DB->query('SELECT member_id, login_type FROM '.$this->ipbwi->board['sql_tbl_prefix'].'sessions WHERE running_time > "'.$timecutoff.'"');
+				Ipbwi_IpsWrapper::instance()->DB->query('SELECT member_id, login_type FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'sessions WHERE running_time > "'.$timecutoff.'"');
 				// Let's cache so we don't screw ourselves over :)
 				$cached = array();
 				// We need to make sure our man's in this count...
-				if($this->ipbwi->member->isLoggedIn()){
-					if(substr($this->ipbwi->member->myInfo['login_anonymous'],0, 1) == '1'){
+				if(Ipbwi::instance()->member->isLoggedIn()){
+					if(substr(Ipbwi::instance()->member->myInfo['login_anonymous'],0, 1) == '1'){
 						++$count['anon'];
 					}else{
 						++$count['members'];
 					}
-					$cached[$this->ipbwi->member->myInfo['member_id']] = 1;
+					$cached[Ipbwi::instance()->member->myInfo['member_id']] = 1;
 				}
-				while($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+				while($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 					// Add up members
 					if($row['login_type'] == '1' && !array_key_exists($row['member_id'],$cached)){
 						++$count['anon'];
@@ -86,7 +86,7 @@
 					}
 				}
 				$count['total'] = $count['anon'] + $count['guests'] + $count['members'];
-				$this->ipbwi->cache->save('activeCount', 'detail', $count);
+				Ipbwi::instance()->cache->save('activeCount', 'detail', $count);
 				return $count;
 			}
 		}
@@ -110,10 +110,10 @@
 			if((int)$month<=0){
 				$month = date ('n');
 			}
-			$this->ipbwi->ips_wrapper->DB->query('SELECT m.*, me.signature, me.avatar_size, me.avatar_location, me.avatar_type, me.vdirs, me.location, me.msnname, me.interests, me.yahoo, me.website, me.aim_name, me.icq_number, g.*, cf.* FROM '.$this->ipbwi->board['sql_tbl_prefix'].'members m LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'groups g ON (m.mgroup=g.g_id) LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'pfields_content cf ON (cf.member_id=m.id) LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'member_extra me ON (m.id=me.id) WHERE m.bday_day="'.intval($day).'" AND m.bday_month="'.intval($month).'"');
+			Ipbwi_IpsWrapper::instance()->DB->query('SELECT m.*, me.signature, me.avatar_size, me.avatar_location, me.avatar_type, me.vdirs, me.location, me.msnname, me.interests, me.yahoo, me.website, me.aim_name, me.icq_number, g.*, cf.* FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'members m LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'groups g ON (m.mgroup=g.g_id) LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'pfields_content cf ON (cf.member_id=m.id) LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'member_extra me ON (m.id=me.id) WHERE m.bday_day="'.intval($day).'" AND m.bday_month="'.intval($month).'"');
 			$return = array();
 			$thisyear = date ('Y');
-			while($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+			while($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 				$row['age'] = $thisyear - $row['bday_year'];
 				$return[] = $row;
 			}

@@ -9,17 +9,54 @@
 	 * @license			http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License
 	 */
 	namespace Ipbwi;
-	class Ipbwi_Forum extends Ipbwi {
-		private $ipbwi			= null;
+	class Ipbwi_Forum {
+		private static $instance = null;
+	
+		/**
+		 * @desc			Singleton method - instantiates the class or returns an existing instance
+		 * @author			Scott Luther
+		 * @since			3.1
+		 * 
+		 * @ignore
+		 */
+		
+		public static function instance() {
+			if(!isset(self::$instance)) {
+				$class = __CLASS__;
+				self::$instance = new $class;
+			}
+			return self::$instance;
+		}
+		
+		/**
+		 * @desc			Inits the class, setting up vars
+		 * @param	object	$config object containing config
+		 * @return	object	instance of class
+		 * @author			Scott Luther
+		 * @since			3.1
+		 * 
+		 * @ignore
+		 */
+		
+		public function init($config) {
+			// checks if the current user is logged in
+			if(Ipbwi_IpsWrapper::instance()->loggedIn == 0){
+				$this->loggedIn = false;
+			}else{
+				$this->loggedIn = true;
+			}
+			
+			$this->myInfo = Ipbwi_IpsWrapper::instance()->myInfo();
+			return self::$instance;
+		}
+		
 		/**
 		 * @desc			Loads and checks different vars when class is initiating
 		 * @author			Matthias Reuter
 		 * @since			2.0
 		 * @ignore
 		 */
-		public function __construct($ipbwi){
-			// loads common classes
-			$this->ipbwi = $ipbwi;
+		private function __construct(){
 		}
 		/**
 		 * @desc			Converts forum name to forum-ids
@@ -33,9 +70,9 @@
 		 * @since			2.0
 		 */
 		public function name2id($name){
-			$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT id FROM '.$this->ipbwi->board['sql_tbl_prefix'].'forums WHERE name="'.addslashes(htmlentities($name)).'"');
-			$forums = $this->ipbwi->ips_wrapper->DB->fetch($sql);
-			if($this->ipbwi->ips_wrapper->DB->getTotalRows($sql) == 0){
+			$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT id FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'forums WHERE name="'.addslashes(htmlentities($name)).'"');
+			$forums = Ipbwi_IpsWrapper::instance()->DB->fetch($sql);
+			if(Ipbwi_IpsWrapper::instance()->DB->getTotalRows($sql) == 0){
 				return false;
 			}elseif(is_array($forums) && count($forums) === 1){
 				// return matching forum-id
@@ -57,23 +94,23 @@
 		 * @since			2.0
 		 */
 		public function info($forumID){
-			if($cache = $this->ipbwi->cache->get('forumInfo', $forumID)){
+			if($cache = Ipbwi::instance()->cache->get('forumInfo', $forumID)){
 				return $cache;
 			}else{
-				$sql = $this->ipbwi->ips_wrapper->DB->query('SELECT f.* from '.$this->ipbwi->board['sql_tbl_prefix'].'forums f WHERE f.id="'.$forumID.'"');
-				if($row = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
-					$row['last_poster_name'] = $this->ipbwi->properXHTML($row['last_poster_name']);
-					$row['name'] = $this->ipbwi->properXHTML($row['name']);
-					$row['description'] = $this->ipbwi->properXHTML($row['description']);
-					$row['last_title'] = $this->ipbwi->properXHTML($row['last_title']);
-					$row['newest_title'] = $this->ipbwi->properXHTML($row['newest_title']);
-					$perms = (isset($row['permission_array']) ? $this->ipbwi->permissions->sort($row['permission_array']) : false);
+				$sql = Ipbwi_IpsWrapper::instance()->DB->query('SELECT f.* from '.Ipbwi::instance()->board['sql_tbl_prefix'].'forums f WHERE f.id="'.$forumID.'"');
+				if($row = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
+					$row['last_poster_name'] = Ipbwi::instance()->properXHTML($row['last_poster_name']);
+					$row['name'] = Ipbwi::instance()->properXHTML($row['name']);
+					$row['description'] = Ipbwi::instance()->properXHTML($row['description']);
+					$row['last_title'] = Ipbwi::instance()->properXHTML($row['last_title']);
+					$row['newest_title'] = Ipbwi::instance()->properXHTML($row['newest_title']);
+					$perms = (isset($row['permission_array']) ? Ipbwi::instance()->permissions->sort($row['permission_array']) : false);
 					$row['read_perms']   = $perms['read_perms'];
 					$row['reply_perms']  = $perms['reply_perms'];
 					$row['start_perms']  = $perms['start_perms'];
 					$row['upload_perms'] = $perms['upload_perms'];
 					$row['show_perms']   = $perms['show_perms'];
-					$this->ipbwi->cache->save('forumInfo', $forumID, $row);
+					Ipbwi::instance()->cache->save('forumInfo', $forumID, $row);
 					return $row;
 				}else{
 					return false;
@@ -94,11 +131,11 @@
 		 
 		private function getData($field){
 			// search in permission index
-			$perms = explode(',',$this->ipbwi->member->myInfo['g_perm_id']);
-			$query = 'SELECT perm_type_id, '.$field.' FROM '.$this->ipbwi->board['sql_tbl_prefix'].'permission_index WHERE perm_type = "forum"';
-			$sql = $this->ipbwi->ips_wrapper->DB->query($query);
+			$perms = explode(',',Ipbwi::instance()->member->myInfo['g_perm_id']);
+			$query = 'SELECT perm_type_id, '.$field.' FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'permission_index WHERE perm_type = "forum"';
+			$sql = Ipbwi_IpsWrapper::instance()->DB->query($query);
 			$forums = array();
-			while($row = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+			while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 				foreach($perms as $perm){
 					if(strpos($row[$field],','.$perm.',') !== false || $row[$field] == '*'){
 						$forums[$row['perm_type_id']]	= $row['perm_type_id'];
@@ -137,11 +174,11 @@
 		 * @since			2.0
 		 */
 		public function getReadable(){
-			if($cache = $this->ipbwi->cache->get('forumsGetReadable', $this->ipbwi->member->myInfo['member_id'])){
+			if($cache = Ipbwi::instance()->cache->get('forumsGetReadable', Ipbwi::instance()->member->myInfo['member_id'])){
 				return $cache;
 			}else{
 				$forums = $this->getData('perm_2');
-				$this->ipbwi->cache->save('forumsGetReadable', $this->ipbwi->member->myInfo['member_id'], $forums);
+				Ipbwi::instance()->cache->save('forumsGetReadable', Ipbwi::instance()->member->myInfo['member_id'], $forums);
 				return $forums;
 			}
 		}
@@ -175,11 +212,11 @@
 		 * @since			2.0
 		 */
 		public function getPostable(){
-			if($cache = $this->ipbwi->cache->get('forumsGetPostable', $this->ipbwi->member->myInfo['member_id'])){
+			if($cache = Ipbwi::instance()->cache->get('forumsGetPostable', Ipbwi::instance()->member->myInfo['member_id'])){
 				return $cache;
 			}else{
 				$forums = $this->getData('perm_3');
-				$this->ipbwi->cache->save('forumsGetPostable', $this->ipbwi->member->myInfo['member_id'], $forums);
+				Ipbwi::instance()->cache->save('forumsGetPostable', Ipbwi::instance()->member->myInfo['member_id'], $forums);
 				return $forums;
 			}
 		}
@@ -213,11 +250,11 @@
 		 * @since			2.0
 		 */
 		public function getStartable(){
-			if($cache = $this->ipbwi->cache->get('forumsGetStartable', $this->ipbwi->member->myInfo['member_id'])){
+			if($cache = Ipbwi::instance()->cache->get('forumsGetStartable', Ipbwi::instance()->member->myInfo['member_id'])){
 				return $cache;
 			}else{
 				$forums = $this->getData('perm_4');
-				$this->ipbwi->cache->save('forumsGetStartable', $this->ipbwi->member->myInfo['member_id'], $forums);
+				Ipbwi::instance()->cache->save('forumsGetStartable', Ipbwi::instance()->member->myInfo['member_id'], $forums);
 				return $forums;
 			}
 		}
@@ -251,11 +288,11 @@
 		 * @since			2.0
 		 */
 		public function getUploadable(){
-			if($cache = $this->ipbwi->cache->get('forumsgetUploadable', $this->ipbwi->member->myInfo['member_id'])){
+			if($cache = Ipbwi::instance()->cache->get('forumsgetUploadable', Ipbwi::instance()->member->myInfo['member_id'])){
 				return $cache;
 			}else{
 				$forums = $this->getData('perm_5');
-				$this->ipbwi->cache->save('forumsgetUploadable', $this->ipbwi->member->myInfo['member_id'], $forums);
+				Ipbwi::instance()->cache->save('forumsgetUploadable', Ipbwi::instance()->member->myInfo['member_id'], $forums);
 				return $forums;
 			}
 		}
@@ -289,11 +326,11 @@
 		 * @since			2.0
 		 */
 		public function getDownloadable(){
-			if($cache = $this->ipbwi->cache->get('forumsgetDownloadable', $this->ipbwi->member->myInfo['member_id'])){
+			if($cache = Ipbwi::instance()->cache->get('forumsgetDownloadable', Ipbwi::instance()->member->myInfo['member_id'])){
 				return $cache;
 			}else{
 				$forums = $this->getData('perm_5');
-				$this->ipbwi->cache->save('forumsgetDownloadable', $this->ipbwi->member->myInfo['member_id'], $forums);
+				Ipbwi::instance()->cache->save('forumsgetDownloadable', Ipbwi::instance()->member->myInfo['member_id'], $forums);
 				return $forums;
 			}
 		}
@@ -351,23 +388,23 @@
 						$output[$i['id']]['name'] = $indent.$i['name'];
 					}
 					// grab all subforums from each delivered cat-id
-					$sql = 'SELECT '.$select.' FROM '.$this->ipbwi->board['sql_tbl_prefix'].'forums WHERE parent_id = '.(isset($i['id']) ? $i['id'] : $i).' ORDER BY position ASC';
-					if($subqery = $this->ipbwi->ips_wrapper->DB->query($sql)){
+					$sql = 'SELECT '.$select.' FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'forums WHERE parent_id = '.(isset($i['id']) ? $i['id'] : $i).' ORDER BY position ASC';
+					if($subqery = Ipbwi_IpsWrapper::instance()->DB->query($sql)){
 						// extend indent-string
 						$indent = $indent.$indentString;
 						// get all subforums in an array
-						while($row = $this->ipbwi->ips_wrapper->DB->fetch($subqery)){
+						while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($subqery)){
 							if($outputType == 'array_ids_only'){
 								$subforums[$row['id']] = $row;
 							}elseif($outputType == 'name_id_with_indent'){
 								$subforums[$row['id']]['id'] = $row['id'];
-								$subforums[$row['id']]['name'] = $this->ipbwi->properXHTML($row['name']);
+								$subforums[$row['id']]['name'] = Ipbwi::instance()->properXHTML($row['name']);
 							}else{
-								if(isset($row['last_poster_name'])){ $row['last_poster_name'] = $this->ipbwi->properXHTML($row['last_poster_name']); }
-								if(isset($row['name'])){ $row['name'] = $this->ipbwi->properXHTML($row['name']); }
-								if(isset($row['description'])){ $row['description'] = $this->ipbwi->properXHTML($row['description']); }
-								if(isset($row['last_title'])){ $row['last_title'] = $this->ipbwi->properXHTML($row['last_title']); }
-								if(isset($row['newest_title'])){ $row['newest_title'] = $this->ipbwi->properXHTML($row['newest_title']); }
+								if(isset($row['last_poster_name'])){ $row['last_poster_name'] = Ipbwi::instance()->properXHTML($row['last_poster_name']); }
+								if(isset($row['name'])){ $row['name'] = Ipbwi::instance()->properXHTML($row['name']); }
+								if(isset($row['description'])){ $row['description'] = Ipbwi::instance()->properXHTML($row['description']); }
+								if(isset($row['last_title'])){ $row['last_title'] = Ipbwi::instance()->properXHTML($row['last_title']); }
+								if(isset($row['newest_title'])){ $row['newest_title'] = Ipbwi::instance()->properXHTML($row['newest_title']); }
 								$subforums[$row['id']] = $row;
 							}
 						}
@@ -411,8 +448,8 @@
 			}else{
 				return false;
 			}
-			if($this->ipbwi->ips_wrapper->DB->query('SELECT tid FROM '.$this->ipbwi->board['sql_tbl_prefix'].'topics WHERE forum_id IN ('.$forumsString.')')){
-				while($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+			if(Ipbwi_IpsWrapper::instance()->DB->query('SELECT tid FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'topics WHERE forum_id IN ('.$forumsString.')')){
+				while($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 					$topicsArray[] = $row['tid'];
 				}
 				if(isset($topicsArray) && is_array($topicsArray) && count($topicsArray) > 0){
@@ -421,21 +458,21 @@
 			}
 			// delete posts
 			if(isset($topicsString)){
-				$this->ipbwi->ips_wrapper->DB->query('DELETE FROM '.$this->ipbwi->board['sql_tbl_prefix'].'posts WHERE topic_id IN ('.$topicsString.')');
+				Ipbwi_IpsWrapper::instance()->DB->query('DELETE FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'posts WHERE topic_id IN ('.$topicsString.')');
 			}
 			// delete polls
 			if(isset($topicsString)){
-				$this->ipbwi->ips_wrapper->DB->query('DELETE FROM '.$this->ipbwi->board['sql_tbl_prefix'].'polls WHERE tid IN ('.$topicsString.')');
+				Ipbwi_IpsWrapper::instance()->DB->query('DELETE FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'polls WHERE tid IN ('.$topicsString.')');
 			}
 			// delete topics
 			if(isset($forumsString)){
-				$this->ipbwi->ips_wrapper->DB->query('DELETE FROM '.$this->ipbwi->board['sql_tbl_prefix'].'topics WHERE forum_id IN ('.$forumsString.')');
+				Ipbwi_IpsWrapper::instance()->DB->query('DELETE FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'topics WHERE forum_id IN ('.$forumsString.')');
 			}
 			// delete all subforums
 			if(isset($forumsString)){
-				$this->ipbwi->ips_wrapper->DB->query('DELETE FROM '.$this->ipbwi->board['sql_tbl_prefix'].'forums WHERE id IN ('.$forumsString.')');
+				Ipbwi_IpsWrapper::instance()->DB->query('DELETE FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'forums WHERE id IN ('.$forumsString.')');
 			}
-			$this->ipbwi->ips_wrapper->update_forum_cache();
+			Ipbwi_IpsWrapper::instance()->update_forum_cache();
 			return true;
 		}
 		/**
@@ -458,27 +495,27 @@
 		 * @since			2.0
 		 */
 		public function create($forumName, $forumDesc, $catID, $perms){
-			$forumName = $this->ipbwi->makeSafe($forumName);
-			$forumDesc = $this->ipbwi->makeSafe($forumDesc);
-			$this->ipbwi->ips_wrapper->DB->query('LOCK TABLE '.$this->ipbwi->board['sql_tbl_prefix'].'forums WRITE');
-			$this->ipbwi->ips_wrapper->DB->query('SELECT MAX(id) as max FROM '.$this->ipbwi->board['sql_tbl_prefix'].'forums');
-			$row = $this->ipbwi->ips_wrapper->DB->fetch();
+			$forumName = Ipbwi::instance()->makeSafe($forumName);
+			$forumDesc = Ipbwi::instance()->makeSafe($forumDesc);
+			Ipbwi_IpsWrapper::instance()->DB->query('LOCK TABLE '.Ipbwi::instance()->board['sql_tbl_prefix'].'forums WRITE');
+			Ipbwi_IpsWrapper::instance()->DB->query('SELECT MAX(id) as max FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'forums');
+			$row = Ipbwi_IpsWrapper::instance()->DB->fetch();
 			$max = $row['max'];
-			$this->ipbwi->ips_wrapper->DB->query('UNLOCK TABLES');
+			Ipbwi_IpsWrapper::instance()->DB->query('UNLOCK TABLES');
 			if($max < 1){
 				$max = 0;
 			}
 			++$max;
 			// Check Cat Exists.
 			if($catID != '-1'){
-				$this->ipbwi->ips_wrapper->DB->query('SELECT * FROM '.$this->ipbwi->board['sql_tbl_prefix'].'forums WHERE id="'.intval($catID).'"');
-				if(!$this->ipbwi->ips_wrapper->DB->fetch()){
-					$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('catNotExist'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi_IpsWrapper::instance()->DB->query('SELECT * FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'forums WHERE id="'.intval($catID).'"');
+				if(!Ipbwi_IpsWrapper::instance()->DB->fetch()){
+					Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('catNotExist'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					return false;
 				}
 			}
-			$this->ipbwi->ips_wrapper->DB->query('SELECT MAX(position) as pos FROM '.$this->ipbwi->board['sql_tbl_prefix'].'forums WHERE parent_id="'.intval($catID).'"');
-			$row = $this->ipbwi->ips_wrapper->DB->fetch();
+			Ipbwi_IpsWrapper::instance()->DB->query('SELECT MAX(position) as pos FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'forums WHERE parent_id="'.intval($catID).'"');
+			$row = Ipbwi_IpsWrapper::instance()->DB->fetch();
 			$pos = $row['pos'];
 			if($pos < 1) $pos = '0';
 			++$pos;
@@ -494,8 +531,8 @@
 			$permsfinal = array();
 			// Get Groups
 			$groups = array();
-			$this->ipbwi->ips_wrapper->DB->query('SELECT perm_id FROM '.$this->ipbwi->board['sql_tbl_prefix'].'forum_perms');
-			while($groupsr = $this->ipbwi->ips_wrapper->DB->fetch()){
+			Ipbwi_IpsWrapper::instance()->DB->query('SELECT perm_id FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'forum_perms');
+			while($groupsr = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 				$groups[] = $groupsr['perm_id'];
 			}
 			foreach($permissions as $i => $j){
@@ -524,7 +561,7 @@
 			// Finally Add it to the Database
 			if($catID == '-1'){
 				// category settings
-				$DB_string = $this->ipbwi->ips_wrapper->DB->compile_db_insert_string(
+				$DB_string = Ipbwi_IpsWrapper::instance()->DB->compile_db_insert_string(
 					array(
 						'id' =>						$max,
 						'topics' =>					0,
@@ -576,7 +613,7 @@
 				);
 			}else{
 				// forum settings
-				$DB_string = $this->ipbwi->ips_wrapper->DB->compile_db_insert_string(
+				$DB_string = Ipbwi_IpsWrapper::instance()->DB->compile_db_insert_string(
 					array(
 						'id' =>							$max,
 						'topics' =>						0,
@@ -627,10 +664,10 @@
 					)
 				);
 			}
-			$this->ipbwi->ips_wrapper->DB->query('LOCK TABLE '.$this->ipbwi->board['sql_tbl_prefix'].'forums WRITE');
-			$this->ipbwi->ips_wrapper->DB->query('INSERT INTO '.$this->ipbwi->board['sql_tbl_prefix'].'forums ('.$DB_string['FIELD_NAMES'].') VALUES ('.$DB_string['FIELD_VALUES'].')');
-			$this->ipbwi->ips_wrapper->DB->query('UNLOCK TABLES');
-			$this->ipbwi->ips_wrapper->update_forum_cache();
+			Ipbwi_IpsWrapper::instance()->DB->query('LOCK TABLE '.Ipbwi::instance()->board['sql_tbl_prefix'].'forums WRITE');
+			Ipbwi_IpsWrapper::instance()->DB->query('INSERT INTO '.Ipbwi::instance()->board['sql_tbl_prefix'].'forums ('.$DB_string['FIELD_NAMES'].') VALUES ('.$DB_string['FIELD_VALUES'].')');
+			Ipbwi_IpsWrapper::instance()->DB->query('UNLOCK TABLES');
+			Ipbwi_IpsWrapper::instance()->update_forum_cache();
 			return $max;
 		}
 		/**
@@ -644,21 +681,21 @@
 		 * @since			2.0
 		 */
 		public function catList(){
-			if($cache = $this->ipbwi->cache->get('listCategories', '1')){
+			if($cache = Ipbwi::instance()->cache->get('listCategories', '1')){
 				return $cache;
 			}else{
-				$query = $this->ipbwi->ips_wrapper->DB->query('SELECT * FROM '.$this->ipbwi->board['sql_tbl_prefix'].'forums WHERE parent_id = "-1"');
+				$query = Ipbwi_IpsWrapper::instance()->DB->query('SELECT * FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'forums WHERE parent_id = "-1"');
 				$cat = array();
-				if($this->ipbwi->ips_wrapper->DB->getTotalRows() == 0) return false;
-				while($row = $this->ipbwi->ips_wrapper->DB->fetch($query)){
-					$row['last_poster_name'] = $this->ipbwi->properXHTML($row['last_poster_name']);
-					$row['name'] = $this->ipbwi->properXHTML($row['name']);
-					$row['description'] = $this->ipbwi->properXHTML($row['description']);
-					$row['last_title'] = $this->ipbwi->properXHTML($row['last_title']);
-					$row['newest_title'] = $this->ipbwi->properXHTML($row['newest_title']);
+				if(Ipbwi_IpsWrapper::instance()->DB->getTotalRows() == 0) return false;
+				while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($query)){
+					$row['last_poster_name'] = Ipbwi::instance()->properXHTML($row['last_poster_name']);
+					$row['name'] = Ipbwi::instance()->properXHTML($row['name']);
+					$row['description'] = Ipbwi::instance()->properXHTML($row['description']);
+					$row['last_title'] = Ipbwi::instance()->properXHTML($row['last_title']);
+					$row['newest_title'] = Ipbwi::instance()->properXHTML($row['newest_title']);
 					$cat[$row['id']] = $row;
 				}
-				$this->ipbwi->cache->save('listCategories', '1', $cat);
+				Ipbwi::instance()->cache->save('listCategories', '1', $cat);
 				return $cat;
 			}
 		}

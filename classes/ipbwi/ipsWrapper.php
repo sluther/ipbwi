@@ -20,6 +20,14 @@ class Ipbwi_IpsWrapper extends \apiCore {
 	public	$parser;
 	private static $instance = null;
 	
+	/**
+	 * @desc			Singleton method - instantiates the class or returns an existing instance
+	 * @author			Scott Luther
+	 * @since			3.1
+	 * 
+	 * @ignore
+	 */
+	
 	public static function instance() {
 		if(!isset(self::$instance)) {
 			$class = __CLASS__;
@@ -28,6 +36,16 @@ class Ipbwi_IpsWrapper extends \apiCore {
 		
 		return self::$instance;
 	}
+	
+	/**
+	 * @desc			Inits the class, setting up vars
+		 * @param	object	$config object containing config
+		 * @return	object	instance of class
+	 * @author			Scott Luther
+	 * @since			3.1
+	 * 
+	 * @ignore
+	 */
 	
 	public function init($config) {
 		parent::init();

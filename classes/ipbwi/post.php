@@ -9,7 +9,7 @@
 	 * @license			http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License
 	 */
 	namespace Ipbwi;
-	class Ipbwi_Post extends Ipbwi {
+	class Ipbwi_Post {
 		private $ipbwi			= null;
 		/**
 		 * @desc			Loads and checks different vars when class is initiating
@@ -19,7 +19,7 @@
 		 */
 		public function __construct($ipbwi){
 			// loads common classes
-			$this->ipbwi = $ipbwi;
+			Ipbwi::instance()-> = $ipbwi;
 		}
 		/**
 		 * @desc			Adds a new post.
@@ -39,83 +39,83 @@
 		 * @since			2.0
 		 */
 		public function create($topicid, $post, $useEmo = true, $useSig = true, $bypassPerms = false, $guestname = false){
-			if($this->ipbwi->member->isLoggedIn()){
-				$postname = $this->ipbwi->member->myInfo['members_display_name'];
+			if(Ipbwi::instance()->member->isLoggedIn()){
+				$postname = Ipbwi::instance()->member->myInfo['members_display_name'];
 			}elseif($guestname){
-				$postname = $this->ipbwi->ips_wrapper->settings['guest_name_pre'].$this->makeSafe($guestname).$this->ipbwi->ips_wrapper->settings['guest_name_suf'];
+				$postname = Ipbwi_IpsWrapper::instance()->settings['guest_name_pre'].$this->makeSafe($guestname).Ipbwi_IpsWrapper::instance()->settings['guest_name_suf'];
 			}else{
-				$postname = $this->ipbwi->member->myInfo['members_display_name'];
+				$postname = Ipbwi::instance()->member->myInfo['members_display_name'];
 			}
 			// No Posting
-			if($this->ipbwi->member->myInfo['restrict_post']){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+			if(Ipbwi::instance()->member->myInfo['restrict_post']){
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			// Flooding
-			if($this->ipbwi->ips_wrapper->settings['flood_control'] AND !$this->ipbwi->permissions->has('g_avoid_flood')){
-				if((time() - $this->ipbwi->member->myInfo['last_post']) < $this->ipbwi->ips_wrapper->settings['flood_control']){
-					$this->ipbwi->addSystemMessage('Error',sprintf($this->ipbwi->getLibLang('floodControl'), $this->ipbwi->ips_wrapper->settings['flood_control']),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+			if(Ipbwi_IpsWrapper::instance()->settings['flood_control'] AND !Ipbwi::instance()->permissions->has('g_avoid_flood')){
+				if((time() - Ipbwi::instance()->member->myInfo['last_post']) < Ipbwi_IpsWrapper::instance()->settings['flood_control']){
+					Ipbwi::instance()->addSystemMessage('Error',sprintf(Ipbwi::instance()->getLibLang('floodControl'), Ipbwi_IpsWrapper::instance()->settings['flood_control']),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					return false;
 				}
 			}
 			// Check some Topic Stuff
-			$this->ipbwi->ips_wrapper->DB->query('SELECT t.*, f.* FROM '.$this->ipbwi->board['sql_tbl_prefix'].'topics t LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'forums f ON (t.forum_id=f.id) WHERE t.tid="'.intval($topicid).'"');
-			if($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+			Ipbwi_IpsWrapper::instance()->DB->query('SELECT t.*, f.* FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'topics t LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'forums f ON (t.forum_id=f.id) WHERE t.tid="'.intval($topicid).'"');
+			if($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 				// Check User can Post to Forum
-				if($this->ipbwi->forum->isPostable($row['forum_id']) OR $bypassPerms){
+				if(Ipbwi::instance()->forum->isPostable($row['forum_id']) OR $bypassPerms){
 					// Post Queue
-					if($row['preview_posts'] OR $this->ipbwi->member->myInfo['mod_posts']){
+					if($row['preview_posts'] OR Ipbwi::instance()->member->myInfo['mod_posts']){
 						$preview = 1;
 					}else{
 						$preview = 0;
 					}
 					// What if the topic is locked
-					if($row['state'] != 'open' AND !$this->ipbwi->permissions->has('g_post_closed')){
-						$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					if($row['state'] != 'open' AND !Ipbwi::instance()->permissions->has('g_post_closed')){
+						Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 						return false;
 					}
 					// Check they can reply
-					if($row['starter_id'] == $this->ipbwi->member->myInfo['member_id'] && !$this->ipbwi->permissions->has('g_reply_own_topics')){
-						$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					if($row['starter_id'] == Ipbwi::instance()->member->myInfo['member_id'] && !Ipbwi::instance()->permissions->has('g_reply_own_topics')){
+						Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 						return false;
-					}elseif(!$this->ipbwi->permissions->has('g_reply_other_topics')){
-						$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					}elseif(!Ipbwi::instance()->permissions->has('g_reply_other_topics')){
+						Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 						return false;
 					}
 					$time = time();
 					// If we're still here, we should be ok to add the post
-					$this->ipbwi->ips_wrapper->parser->parse_bbcode		= $row['use_ibc'];
-					$this->ipbwi->ips_wrapper->parser->strip_quotes		= 1;
-					$this->ipbwi->ips_wrapper->parser->parse_nl2br		= 1;
-					$this->ipbwi->ips_wrapper->parser->parse_html		= 0;
-					$this->ipbwi->ips_wrapper->parser->parse_smilies	= ($useEmo ? 1 : 0);
-					$post = $this->ipbwi->ips_wrapper->parser->preDbParse($post);
+					Ipbwi_IpsWrapper::instance()->parser->parse_bbcode		= $row['use_ibc'];
+					Ipbwi_IpsWrapper::instance()->parser->strip_quotes		= 1;
+					Ipbwi_IpsWrapper::instance()->parser->parse_nl2br		= 1;
+					Ipbwi_IpsWrapper::instance()->parser->parse_html		= 0;
+					Ipbwi_IpsWrapper::instance()->parser->parse_smilies	= ($useEmo ? 1 : 0);
+					$post = Ipbwi_IpsWrapper::instance()->parser->preDbParse($post);
 					if($useEmo == 0){
-						$post	= $this->ipbwi->bbcode->html2bbcode($post);
+						$post	= Ipbwi::instance()->bbcode->html2bbcode($post);
 					}
-					$post	= $this->ipbwi->makeSafe($post);
+					$post	= Ipbwi::instance()->makeSafe($post);
 					// POST KEY!
-					$this->ipbwi->ips_wrapper->DB->query('INSERT INTO '.$this->ipbwi->board['sql_tbl_prefix'].'posts (author_id, author_name, use_emo, use_sig, ip_address, post_date, post, queued, topic_id, post_key) VALUES ("'.$this->ipbwi->member->myInfo['member_id'].'", "'.$postname.'", "'.($useEmo ? 1 : 0).'", "'.($useSig ? 1 : 0).'", "'.$_SERVER['REMOTE_ADDR'].'", "'.$time.'", "'.$post.'", "'.$preview.'", "'.$row['tid'].'", "'.md5(microtime()).'")');
-					$postID = $this->ipbwi->ips_wrapper->DB->getInsertId();
+					Ipbwi_IpsWrapper::instance()->DB->query('INSERT INTO '.Ipbwi::instance()->board['sql_tbl_prefix'].'posts (author_id, author_name, use_emo, use_sig, ip_address, post_date, post, queued, topic_id, post_key) VALUES ("'.Ipbwi::instance()->member->myInfo['member_id'].'", "'.$postname.'", "'.($useEmo ? 1 : 0).'", "'.($useSig ? 1 : 0).'", "'.$_SERVER['REMOTE_ADDR'].'", "'.$time.'", "'.$post.'", "'.$preview.'", "'.$row['tid'].'", "'.md5(microtime()).'")');
+					$postID = Ipbwi_IpsWrapper::instance()->DB->getInsertId();
 					// Update the Topics
-					$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'topics SET last_poster_id="'.$this->ipbwi->member->myInfo['member_id'].'", last_poster_name="'.$postname.'", posts=posts+1, last_post="'.$time.'" WHERE tid="'.intval($topicid).'"');
+					Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'topics SET last_poster_id="'.Ipbwi::instance()->member->myInfo['member_id'].'", last_poster_name="'.$postname.'", posts=posts+1, last_post="'.$time.'" WHERE tid="'.intval($topicid).'"');
 					// Finally update the forums
-					$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'forums SET last_poster_id="'.$this->ipbwi->member->myInfo['member_id'].'", last_poster_name="'.$postname.'", posts=posts+1, last_post="'.$time.'", last_title="'.addslashes($row['title']).'", last_id="'.intval($topicid).'" WHERE id="'.intval($row['forum_id']).'"');
+					Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'forums SET last_poster_id="'.Ipbwi::instance()->member->myInfo['member_id'].'", last_poster_name="'.$postname.'", posts=posts+1, last_post="'.$time.'", last_title="'.addslashes($row['title']).'", last_id="'.intval($topicid).'" WHERE id="'.intval($row['forum_id']).'"');
 					// Oh yes, any update the post count for the user
-					if($this->ipbwi->member->myInfo['member_id'] != '0' && $row['inc_postcount']){
-						$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'members SET posts=posts+1, last_post="'.time().'" WHERE member_id="'.$this->ipbwi->member->myInfo['member_id'].'" LIMIT 1');
-					}elseif($this->ipbwi->member->myInfo['member_id'] != '0'){
-						$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'members SET last_post="'.time().'" WHERE member_id="'.$this->ipbwi->member->myInfo['member_id'].'" LIMIT 1');
+					if(Ipbwi::instance()->member->myInfo['member_id'] != '0' && $row['inc_postcount']){
+						Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'members SET posts=posts+1, last_post="'.time().'" WHERE member_id="'.Ipbwi::instance()->member->myInfo['member_id'].'" LIMIT 1');
+					}elseif(Ipbwi::instance()->member->myInfo['member_id'] != '0'){
+						Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'members SET last_post="'.time().'" WHERE member_id="'.Ipbwi::instance()->member->myInfo['member_id'].'" LIMIT 1');
 					}
-					$this->ipbwi->cache->updateForum(intval($row['forum_id']),array('posts' => 1));
+					Ipbwi::instance()->cache->updateForum(intval($row['forum_id']),array('posts' => 1));
 					
 					return $postID;
 				}else{
-					$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					return false;
 				}
 			}else{
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('topicNotExist'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('topicNotExist'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 		}
@@ -132,11 +132,11 @@
 		 */
 		public function delete($postID){
 			$pInfo = $this->info($postID);
-			$this->ipbwi->ips_wrapper->DB->query('DELETE FROM '.$this->ipbwi->board['sql_tbl_prefix'].'posts WHERE pid = "'.intval($postID).'"');
+			Ipbwi_IpsWrapper::instance()->DB->query('DELETE FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'posts WHERE pid = "'.intval($postID).'"');
 			// Update the Topics
-			$this->ipbwi->ips_wrapper->DB->query('UPDATE '.$this->ipbwi->board['sql_tbl_prefix'].'topics SET posts=posts-1 WHERE tid="'.$pInfo['topic_id'].'"');
+			Ipbwi_IpsWrapper::instance()->DB->query('UPDATE '.Ipbwi::instance()->board['sql_tbl_prefix'].'topics SET posts=posts-1 WHERE tid="'.$pInfo['topic_id'].'"');
 			// Finally update the forums
-			if($this->ipbwi->cache->updateForum($pInfo['forum_id'],array('posts' => -1))){
+			if(Ipbwi::instance()->cache->updateForum($pInfo['forum_id'],array('posts' => -1))){
 				return true;
 			}else{
 				return false;
@@ -160,72 +160,72 @@
 		 * @since			2.0
 		 */
 		public function edit($postID, $post, $useEmo = false, $useSig = false, $bypassPerms = false, $appendedit = true){
-			if(!$this->ipbwi->member->isLoggedIn()){
+			if(!Ipbwi::instance()->member->isLoggedIn()){
 				// Oh dear... not sure you can go around having guests editing posts...
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			// No Posting
-			if($this->ipbwi->member->myInfo['restrict_post']){
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+			if(Ipbwi::instance()->member->myInfo['restrict_post']){
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			// Flooding
-			if($this->ipbwi->ips_wrapper->settings['flood_control'] AND !$this->ipbwi->permissions->has('g_avoid_flood') && ((time() - $this->ipbwi->member->myInfo['last_post']) < $this->ipbwi->ips_wrapper->settings['flood_control'])){
-				$this->ipbwi->addSystemMessage('Error',sprintf($this->ipbwi->getLibLang('floodControl'), $this->ips->vars['flood_control']),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+			if(Ipbwi_IpsWrapper::instance()->settings['flood_control'] AND !Ipbwi::instance()->permissions->has('g_avoid_flood') && ((time() - Ipbwi::instance()->member->myInfo['last_post']) < Ipbwi_IpsWrapper::instance()->settings['flood_control'])){
+				Ipbwi::instance()->addSystemMessage('Error',sprintf(Ipbwi::instance()->getLibLang('floodControl'), $this->ips->vars['flood_control']),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 			// Check some Topic Stuff
-			$this->ipbwi->ips_wrapper->DB->query('SELECT  f.*,p.*,t.* FROM '.$this->ipbwi->board['sql_tbl_prefix'].'topics t LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'forums f ON (t.forum_id=f.id) LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'posts p ON(p.topic_id=t.tid) WHERE p.pid="'.intval($postID).'"');
-			if($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+			Ipbwi_IpsWrapper::instance()->DB->query('SELECT  f.*,p.*,t.* FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'topics t LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'forums f ON (t.forum_id=f.id) LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'posts p ON(p.topic_id=t.tid) WHERE p.pid="'.intval($postID).'"');
+			if($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 				// Check User can Post to Forum
-				if($this->ipbwi->forum->isPostable($row['forum_id']) OR $bypassPerms){
+				if(Ipbwi::instance()->forum->isPostable($row['forum_id']) OR $bypassPerms){
 					// Post Queue
-					if($row['preview_posts'] OR $this->ipbwi->member->myInfo['mod_posts']){
+					if($row['preview_posts'] OR Ipbwi::instance()->member->myInfo['mod_posts']){
 						$preview = 1;
 					}else{
 						$preview = 0;
 					}
 					// What if the topic is locked
-					if($row['state'] != 'open' AND !$this->ipbwi->permissions->has('g_post_closed')){
-						$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					if($row['state'] != 'open' AND !Ipbwi::instance()->permissions->has('g_post_closed')){
+						Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 						return false;
 					}
 					// Check they can edit posts
-					if($row['author_id'] == $this->ipbwi->member->myInfo['member_id'] && !$this->ipbwi->permissions->has('g_edit_posts')){
-						$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					if($row['author_id'] == Ipbwi::instance()->member->myInfo['member_id'] && !Ipbwi::instance()->permissions->has('g_edit_posts')){
+						Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 						return false;
-					}elseif($row['author_id'] != $this->ipbwi->member->myInfo['member_id'] && !$this->ipbwi->permissions->has('g_is_supmod')){
-						$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					}elseif($row['author_id'] != Ipbwi::instance()->member->myInfo['member_id'] && !Ipbwi::instance()->permissions->has('g_is_supmod')){
+						Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 						return false;
 					}
 					// Append_Edit?
 					if(!$bypassPerms && !$appendedit){
-						$appendedit = $this->ipbwi->permissions->has('g_append_edit') ? 0 : 1;
+						$appendedit = Ipbwi::instance()->permissions->has('g_append_edit') ? 0 : 1;
 					}
 					$time = time();
-					$this->ipbwi->ips_wrapper->parser->parse_bbcode		= $row['use_ibc'];
-					$this->ipbwi->ips_wrapper->parser->strip_quotes		= 1;
-					$this->ipbwi->ips_wrapper->parser->parse_nl2br		= 0;
-					$this->ipbwi->ips_wrapper->parser->parse_html		= 0;
-					$this->ipbwi->ips_wrapper->parser->parse_smilies	= ($useEmo ? 1 : 0);
-					$post = $this->ipbwi->ips_wrapper->parser->preDbParse($post);
+					Ipbwi_IpsWrapper::instance()->parser->parse_bbcode		= $row['use_ibc'];
+					Ipbwi_IpsWrapper::instance()->parser->strip_quotes		= 1;
+					Ipbwi_IpsWrapper::instance()->parser->parse_nl2br		= 0;
+					Ipbwi_IpsWrapper::instance()->parser->parse_html		= 0;
+					Ipbwi_IpsWrapper::instance()->parser->parse_smilies	= ($useEmo ? 1 : 0);
+					$post = Ipbwi_IpsWrapper::instance()->parser->preDbParse($post);
 					if($useEmo == 0){
-						$post	= $this->ipbwi->bbcode->html2bbcode($post);
+						$post	= Ipbwi::instance()->bbcode->html2bbcode($post);
 					}
-					$post	= $this->ipbwi->makeSafe($post);
+					$post	= Ipbwi::instance()->makeSafe($post);
 					// updatepost
-					$this->ipbwi->ips_wrapper->DB->query('REPLACE INTO '.$this->ipbwi->board['sql_tbl_prefix'].'posts (pid, author_id, author_name, use_emo, use_sig, ip_address, edit_time, post, queued, topic_id, append_edit, edit_name, post_date,post_parent,post_key,post_htmlstate,new_topic,icon_id) VALUES ("'.$row['pid'].'", "'.$row['author_id'].'", "'.$row['author_name'].'", "'.($useEmo ? 1 : 0).'", "'.($useSig ? 1 : 0).'", "'.$_SERVER['REMOTE_ADDR'].'", "'.$time.'", "'.$post.'", "'.$preview.'", "'.$row['tid'].'", "'.$appendedit.'", "'.$this->ipbwi->member->myInfo['name'].'", "'.$row['post_date'].'", "'.$row['post_parent'].'", "'.$row['post_key'].'", 0, "'.$row['new_topic'].'", "'.$row['icon_id'].'")');
+					Ipbwi_IpsWrapper::instance()->DB->query('REPLACE INTO '.Ipbwi::instance()->board['sql_tbl_prefix'].'posts (pid, author_id, author_name, use_emo, use_sig, ip_address, edit_time, post, queued, topic_id, append_edit, edit_name, post_date,post_parent,post_key,post_htmlstate,new_topic,icon_id) VALUES ("'.$row['pid'].'", "'.$row['author_id'].'", "'.$row['author_name'].'", "'.($useEmo ? 1 : 0).'", "'.($useSig ? 1 : 0).'", "'.$_SERVER['REMOTE_ADDR'].'", "'.$time.'", "'.$post.'", "'.$preview.'", "'.$row['tid'].'", "'.$appendedit.'", "'.Ipbwi::instance()->member->myInfo['name'].'", "'.$row['post_date'].'", "'.$row['post_parent'].'", "'.$row['post_key'].'", 0, "'.$row['new_topic'].'", "'.$row['icon_id'].'")');
 					// update cache
-					$this->ipbwi->ips_wrapper->DB->query('REPLACE INTO '.$this->ipbwi->board['sql_tbl_prefix'].'content_cache_posts (cache_content_id, cache_content, cache_updated) VALUES ("'.$row['pid'].'", "'.$post.'", "'.time().'")');
+					Ipbwi_IpsWrapper::instance()->DB->query('REPLACE INTO '.Ipbwi::instance()->board['sql_tbl_prefix'].'content_cache_posts (cache_content_id, cache_content, cache_updated) VALUES ("'.$row['pid'].'", "'.$post.'", "'.time().'")');
 					
 					return true;
 				}else{
-					$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					return false;
 				}
 			}else{
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('postNotExist'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('postNotExist'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 		}
@@ -245,24 +245,24 @@
 		public function info($postID, $replacePostVars = true, $ipbwiLink = false, $list = false, $topicInfo = false){
 			if(isset($list['sql'])){
 				// allow SUB SELECT query joins
-				$this->ipbwi->ips_wrapper->DB->allow_sub_select=1;
+				Ipbwi_IpsWrapper::instance()->DB->allow_sub_select=1;
 				
 				// query list
 				$query = $list['sql'];
 			}else{
 				// Check for Post Cache
-				if($cache = $this->ipbwi->cache->get('postInfo', $postID)){
+				if($cache = Ipbwi::instance()->cache->get('postInfo', $postID)){
 					return $cache;
 				}else{
 					// query single topic
-					$query = 'SELECT m.*, p.*, t.forum_id, t.title AS topic_name, g.g_dohtml AS usedohtml FROM '.$this->ipbwi->board['sql_tbl_prefix'].'posts p LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'topics t ON (p.topic_id=t.tid) LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'members m ON (p.author_id=m.member_id) LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'groups g ON (m.member_group_id=g.g_id) WHERE p.pid="'.intval($postID).'"';
+					$query = 'SELECT m.*, p.*, t.forum_id, t.title AS topic_name, g.g_dohtml AS usedohtml FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'posts p LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'topics t ON (p.topic_id=t.tid) LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'members m ON (p.author_id=m.member_id) LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'groups g ON (m.member_group_id=g.g_id) WHERE p.pid="'.intval($postID).'"';
 				}
 			}
-			$sql = $this->ipbwi->ips_wrapper->DB->query($query);
-			if($this->ipbwi->ips_wrapper->DB->getTotalRows($sql) == 0){
+			$sql = Ipbwi_IpsWrapper::instance()->DB->query($query);
+			if(Ipbwi_IpsWrapper::instance()->DB->getTotalRows($sql) == 0){
 				return false;
 			}
-			while($row = $this->ipbwi->ips_wrapper->DB->fetch($sql)){
+			while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($sql)){
 				// sort out posts which are the topic's first post (non-reply)
 				if($row['new_topic']){
 					continue;
@@ -272,29 +272,29 @@
 					$firstEntry = $row['pid'];
 				}
 				
-				$this->ipbwi->ips_wrapper->parser->parse_smilies			= $row['use_emo'];
-				$this->ipbwi->ips_wrapper->parser->parse_html				= 0;
-				$this->ipbwi->ips_wrapper->parser->parse_nl2br				= 1;
-				$this->ipbwi->ips_wrapper->parser->parse_bbcode				= (isset($row['use_ibc']) ? $row['use_ibc'] : 0);
-				$this->ipbwi->ips_wrapper->parser->parsing_section			= 'topics';
-				$this->ipbwi->ips_wrapper->parser->parsing_mgroup			= $row['member_group_id'];
-				$this->ipbwi->ips_wrapper->parser->parsing_mgroup_others	= $row['mgroup_others'];
+				Ipbwi_IpsWrapper::instance()->parser->parse_smilies			= $row['use_emo'];
+				Ipbwi_IpsWrapper::instance()->parser->parse_html				= 0;
+				Ipbwi_IpsWrapper::instance()->parser->parse_nl2br				= 1;
+				Ipbwi_IpsWrapper::instance()->parser->parse_bbcode				= (isset($row['use_ibc']) ? $row['use_ibc'] : 0);
+				Ipbwi_IpsWrapper::instance()->parser->parsing_section			= 'topics';
+				Ipbwi_IpsWrapper::instance()->parser->parsing_mgroup			= $row['member_group_id'];
+				Ipbwi_IpsWrapper::instance()->parser->parsing_mgroup_others	= $row['mgroup_others'];
 				
 				// make proper XHTML
 				$post[$row['pid']]										= $row;
-				$post[$row['pid']]['post']								= $this->ipbwi->properXHTML($this->ipbwi->bbcode->bbcode2html($post[$row['pid']]['post']));
-				$post[$row['pid']]['post_title']						= $this->ipbwi->properXHTML($post[$row['pid']]['post_title']);
-				$post[$row['pid']]['topic_name']						= $this->ipbwi->properXHTML($post[$row['pid']]['topic_name']);
-				$post[$row['pid']]['post_edit_reason']					= $this->ipbwi->properXHTML($post[$row['pid']]['post_edit_reason']);
-				$post[$row['pid']]['author_name']						= $this->ipbwi->properXHTML($post[$row['pid']]['author_name']);
+				$post[$row['pid']]['post']								= Ipbwi::instance()->properXHTML(Ipbwi::instance()->bbcode->bbcode2html($post[$row['pid']]['post']));
+				$post[$row['pid']]['post_title']						= Ipbwi::instance()->properXHTML($post[$row['pid']]['post_title']);
+				$post[$row['pid']]['topic_name']						= Ipbwi::instance()->properXHTML($post[$row['pid']]['topic_name']);
+				$post[$row['pid']]['post_edit_reason']					= Ipbwi::instance()->properXHTML($post[$row['pid']]['post_edit_reason']);
+				$post[$row['pid']]['author_name']						= Ipbwi::instance()->properXHTML($post[$row['pid']]['author_name']);
 
 				// replace attachment post vars with attachment-code
 				if($replacePostVars === true){
-					$attachInfo = $this->ipbwi->attachment->getList($row['pid'],array('type' => 'post', 'ipbwiLink' => $ipbwiLink));
+					$attachInfo = Ipbwi::instance()->attachment->getList($row['pid'],array('type' => 'post', 'ipbwiLink' => $ipbwiLink));
 					if(is_array($attachInfo) && count($attachInfo) > 0){
 						foreach($attachInfo as $attachList){
 							if(strpos($post[$row['pid']]['post'],'[attachment='.$attachList['attach_id'].':') != false){
-								$post[$row['pid']]['AttachmentNotInlineInfo'][$attachList['attach_id']] = $this->ipbwi->attachment->info($attachList['attach_id'],array('ipbwiLink' => $ipbwiLink));
+								$post[$row['pid']]['AttachmentNotInlineInfo'][$attachList['attach_id']] = Ipbwi::instance()->attachment->info($attachList['attach_id'],array('ipbwiLink' => $ipbwiLink));
 							}
 						}
 						if(isset($attachInfo['defaultHTML'])){
@@ -305,7 +305,7 @@
 					}
 				}
 				// Save Post  In Cache and Return
-				$this->ipbwi->cache->save('postInfo', $postID, $row);
+				Ipbwi::instance()->cache->save('postInfo', $postID, $row);
 			}
 			if(isset($list['sql'])){
 				return $post;
@@ -339,11 +339,11 @@
 			}else{
 				$topics = '"'.$topicIDs.'"';
 			}
-			$query = $this->ipbwi->ips_wrapper->DB->query('SELECT pid FROM '.$this->ipbwi->board['sql_tbl_prefix'].'posts WHERE (topic_id = '.$topics.')');
-			if($this->ipbwi->ips_wrapper->DB->getTotalRows() == 0){
+			$query = Ipbwi_IpsWrapper::instance()->DB->query('SELECT pid FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'posts WHERE (topic_id = '.$topics.')');
+			if(Ipbwi_IpsWrapper::instance()->DB->getTotalRows() == 0){
 				return false;
 			}
-			while($row = $this->ipbwi->ips_wrapper->DB->fetch($query)){
+			while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($query)){
 				$postIDs[] = $row['pid'];
 			}
 			return $postIDs;
@@ -415,10 +415,10 @@
 					}
 				}
 				// Query
-				$getfid = $this->ipbwi->ips_wrapper->DB->query('SELECT tid, forum_id FROM '.$this->ipbwi->board['sql_tbl_prefix'].'topics WHERE '.$topics);
+				$getfid = Ipbwi_IpsWrapper::instance()->DB->query('SELECT tid, forum_id FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'topics WHERE '.$topics);
 				// Now we should how topic ids and their forum ids.
-				while($row = $this->ipbwi->ips_wrapper->DB->fetch($getfid)){
-					if($this->ipbwi->forum->isReadable($row['forum_id']) OR $bypassPerms){
+				while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($getfid)){
+					if(Ipbwi::instance()->forum->isReadable($row['forum_id']) OR $bypassPerms){
 						if(!$sqlwhere){
 							$sqlwhere .= '(topic_id="'. $row['tid'].'"';
 						}else{
@@ -430,7 +430,7 @@
 					$sqlwhere .= ') AND ';
 					$cando = 1;
 				}else{
-					$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					return false;
 				}
 			}elseif($topicID == '*'){
@@ -440,7 +440,7 @@
 					$cando = 1;
 				}else{
 					// All topics. So we can grab them from all readable forums.
-					$readable = $this->ipbwi->forum->getReadable();
+					$readable = Ipbwi::instance()->forum->getReadable();
 					foreach($readable as $j => $k){
 						if(!$sqlwhere){
 							$sqlwhere .= '(forum_id="'.$j.'"';
@@ -452,19 +452,19 @@
 						$sqlwhere .= ') AND ';
 						$cando = 1;
 					}else{
-						$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+						Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 						return false;
 					}
 				}
 			}else{
 				// Classic Posts from Topic Export
 				// Grab Topic Info then check whether forum is readable.
-				$topicinfo = $this->ipbwi->topic->info($topicID,$countView);
-				if($this->ipbwi->forum->isReadable($topicinfo['forum_id']) OR $bypassPerms){
+				$topicinfo = Ipbwi::instance()->topic->info($topicID,$countView);
+				if(Ipbwi::instance()->forum->isReadable($topicinfo['forum_id']) OR $bypassPerms){
 					$sqlwhere = 'topic_id="'.intval($topicID).'" AND ';
 					$cando = 1;
 				}else{
-					$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					return false;
 				}
 			}
@@ -482,10 +482,10 @@
 				$limit = $settings['limit'] ? intval($settings['limit']) : 15;
 				$start = $settings['start'] ? intval($settings['start']) : 0;
 				
-				$query = 'SELECT m.*, p.*, t.forum_id, t.title AS topic_name, g.g_dohtml AS usedohtml FROM '.$this->ipbwi->board['sql_tbl_prefix'].'posts p LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'members m ON (p.author_id=m.member_id) LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'groups g ON (m.member_group_id=g.g_id) LEFT JOIN '.$this->ipbwi->board['sql_tbl_prefix'].'topics t ON(p.topic_id=t.tid) WHERE p.pid != topic_firstpost AND '.$specificMember.$sqlwhere.'p.queued="0" ORDER BY '.$order.' LIMIT '.$start.','.$limit;
+				$query = 'SELECT m.*, p.*, t.forum_id, t.title AS topic_name, g.g_dohtml AS usedohtml FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'posts p LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'members m ON (p.author_id=m.member_id) LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'groups g ON (m.member_group_id=g.g_id) LEFT JOIN '.Ipbwi::instance()->board['sql_tbl_prefix'].'topics t ON(p.topic_id=t.tid) WHERE p.pid != topic_firstpost AND '.$specificMember.$sqlwhere.'p.queued="0" ORDER BY '.$order.' LIMIT '.$start.','.$limit;
 				return $this->info(false, $settings['replacePostVars'], $settings['ipbwiLink'], array('sql' => $query),$topicinfo);
 			}else{
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 		}

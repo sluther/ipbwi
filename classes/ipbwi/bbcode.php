@@ -9,7 +9,7 @@
 	 * @license			http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License
 	 */
 	namespace Ipbwi;
-	class Ipbwi_Bbcode extends Ipbwi {
+	class Ipbwi_Bbcode {
 		private $ipbwi			= null;
 		/**
 		 * @desc			Loads and checks different vars when class is initiating
@@ -19,7 +19,7 @@
 		 */
 		public function __construct($ipbwi){
 			// loads common classes
-			$this->ipbwi = $ipbwi;
+			Ipbwi::instance()-> = $ipbwi;
 		}
 		/**
 		 * @desc			converts BBCode to HTML using IPB's native parser.
@@ -34,16 +34,16 @@
 		 * @since			2.0
 		 */
 		public function bbcode2html($input, $smilies = true){
-			$this->ipbwi->ips_wrapper->parser->parse_smilies = $smilies;
-			$this->ipbwi->ips_wrapper->parser->parse_html = 0;
-			$this->ipbwi->ips_wrapper->parser->parse_bbcode = 1;
-			$this->ipbwi->ips_wrapper->parser->strip_quotes = 1;
-			$this->ipbwi->ips_wrapper->parser->parse_nl2br = 1;
-			$input = @$this->ipbwi->ips_wrapper->parser->preDbParse($input);
+			Ipbwi_IpsWrapper::instance()->parser->parse_smilies = $smilies;
+			Ipbwi_IpsWrapper::instance()->parser->parse_html = 0;
+			Ipbwi_IpsWrapper::instance()->parser->parse_bbcode = 1;
+			Ipbwi_IpsWrapper::instance()->parser->strip_quotes = 1;
+			Ipbwi_IpsWrapper::instance()->parser->parse_nl2br = 1;
+			$input = @Ipbwi_IpsWrapper::instance()->parser->preDbParse($input);
 			// Leave this here in case things go pear-shaped...
-			$input = $this->ipbwi->ips_wrapper->parser->preDisplayParse($input);
+			$input = Ipbwi_IpsWrapper::instance()->parser->preDisplayParse($input);
 			if($smilies){
-				$input	= $this->ipbwi->properXHTML($input);
+				$input	= Ipbwi::instance()->properXHTML($input);
 			}
 			return $input;
 		}
@@ -59,12 +59,12 @@
 		 * @since			2.0
 		 */
 		public function html2bbcode($input){
-			$this->ipbwi->ips_wrapper->parser->parse_html		= 0;
-			$this->ipbwi->ips_wrapper->parser->parse_nl2br		= 0;
-			$this->ipbwi->ips_wrapper->parser->parse_smilies	= 1;
-			$this->ipbwi->ips_wrapper->parser->parse_bbcode		= 1;
-			$this->ipbwi->ips_wrapper->parser->parsing_section	= 'myapp_comment';
-			$input = $this->ipbwi->ips_wrapper->parser->preEditParse($input);
+			Ipbwi_IpsWrapper::instance()->parser->parse_html		= 0;
+			Ipbwi_IpsWrapper::instance()->parser->parse_nl2br		= 0;
+			Ipbwi_IpsWrapper::instance()->parser->parse_smilies	= 1;
+			Ipbwi_IpsWrapper::instance()->parser->parse_bbcode		= 1;
+			Ipbwi_IpsWrapper::instance()->parser->parsing_section	= 'myapp_comment';
+			$input = Ipbwi_IpsWrapper::instance()->parser->preEditParse($input);
 			return $input;
 		}
 		/**
@@ -80,12 +80,12 @@
 		 */
 		public function listEmoticons($clickable = false){
 			if($clickable){
-				$this->ipbwi->ips_wrapper->DB->query('SELECT typed, image FROM '.$this->ipbwi->board['sql_tbl_prefix'].'emoticons WHERE clickable="1"');
+				Ipbwi_IpsWrapper::instance()->DB->query('SELECT typed, image FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'emoticons WHERE clickable="1"');
 			}else{
-				$this->ipbwi->ips_wrapper->DB->query('SELECT typed, image FROM '.$this->ipbwi->board['sql_tbl_prefix'].'emoticons');
+				Ipbwi_IpsWrapper::instance()->DB->query('SELECT typed, image FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'emoticons');
 			}
 			$emos = array();
-			while($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+			while($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 				$emos[$row['typed']] = $row['image'];
 			}
 			return $emos;
@@ -105,10 +105,10 @@
 		 * @since			2.0
 		 */
 		public function printTextEditor($post='',$field='post',$output=false,$rte=false){
-			$boardURL = str_replace('?','',$this->ipbwi->board['url']);
+			$boardURL = str_replace('?','',Ipbwi::instance()->board['url']);
 		
 			$style = '
-				<link rel="stylesheet" type="text/css" media="screen" href="'.$boardURL.'public/min/index.php?ipbv=31005&amp;f=public/style_css/css_'.$this->ipbwi->skin->id().'/ipb_editor.css" />
+				<link rel="stylesheet" type="text/css" media="screen" href="'.$boardURL.'public/min/index.php?ipbv=31005&amp;f=public/style_css/css_'.Ipbwi::instance()->skin->id().'/ipb_editor.css" />
 				<style type="text/css">
 					<!--
 						#ipboard_body ul, ol{
@@ -160,12 +160,12 @@ EOF_SCRIPT;
 			$form = '<div id="ipboard_body">'.
 				str_replace(
 					array('<#EMO_DIR#>','undefined&amp;app=forums'),
-					array('default',$this->ipbwi->getBoardVar('url').'/index.php?app=forums'),
+					array('default',Ipbwi::instance()->getBoardVar('url').'/index.php?app=forums'),
 					@\IPSText::getTextClass('editor')->showEditor($rte_post, $field))
 			.'</div>';
 			
 			// if user has set rich text editor
-			if($this->ipbwi->member->myInfo['members_editor_choice'] == 'rte' || $rte == true){
+			if(Ipbwi::instance()->member->myInfo['members_editor_choice'] == 'rte' || $rte == true){
 				if($output == 1){
 					return $style.$jscript;
 				}elseif($output == 2){

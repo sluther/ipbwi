@@ -9,13 +9,29 @@
 	 * @license			http://www.gnu.org/licenses/gpl-3.0.html GNU General Public License
 	 */
 	namespace Ipbwi;
-	class Ipbwi_Attachment extends Ipbwi {
-		private	$ipbwi			= null;
+	class Ipbwi_Attachment {
 		private	$mimeTypes		= array();
 		private	$memoryLimit	= false;
 		private	$maxFileSize	= false;
 		private	$postMaxSize	= false;
 		public	$hash			= false;
+		private static $instance = null;
+		
+		/**
+		 * @desc			Singleton method - instantiates the class or returns an existing instance
+		 * @author			Scott Luther
+		 * @since			3.1
+		 * 
+		 * @ignore
+		 */
+		public static function instance() {
+			if(!isset(self::$instance)) {
+				$class = __CLASS__;
+				self::$instance = new $class;
+			}
+			return self::$instance;
+		}
+		
 		/**
 		 * @desc			Loads and checks different vars when class is initiating
 		 * @param	object	ipbwi The ipbwi class object
@@ -23,13 +39,11 @@
 		 * @since			2.0
 		 * @ignore
 		 */
-		public function __construct($ipbwi){
-			// loads common classes
-			$this->ipbwi = $ipbwi;
-
+		public function __construct(){
+			$config = Ipbwi_Config::instance()->config;
 			// load mimetypes
 			$mimeTypes = array();
-			require_once(ipbwi_ROOT_PATH.'mimetypes.inc.php');
+			require_once(__DIR__.'mimetypes.inc.php');
 			$this->mimeTypes = $mimeTypes;
 
 			// load upload max filesize
@@ -39,26 +53,26 @@
 
 			// create table for attachment deeplink protection
 			$sql_create = '
-			CREATE TABLE IF NOT EXISTS '.ipbwi_DB_prefix.'attach_protect (
+			CREATE TABLE IF NOT EXISTS '.$config->db_prefix.'attach_protect (
 			hashkey TEXT CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
 			hashtime TEXT CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL
 			) ENGINE = MYISAM;';
-			$this->ipbwi->ips_wrapper->DB->query($sql_create);
+			Ipbwi_IpsWrapper::instance()->DB->query($sql_create);
 
 			// check if 24h are past
-			$sql_select = 'SELECT * FROM '.ipbwi_DB_prefix.'attach_protect';
-			$sql_select = $this->ipbwi->ips_wrapper->DB->query($sql_select);
-			$oldHash = $this->ipbwi->ips_wrapper->DB->fetch($sql_select);
+			$sql_select = 'SELECT * FROM '.$config->db_prefix.'attach_protect';
+			$sql_select = Ipbwi_IpsWrapper::instance()->DB->query($sql_select);
+			$oldHash = Ipbwi_IpsWrapper::instance()->DB->fetch($sql_select);
 
 			// update hash after 24h
 			$newHash = md5(rand()+time());
 			if($oldHash != false && is_array($oldHash) && $oldHash['hashtime'] < time()){
-				$sql_update = 'UPDATE '.ipbwi_DB_prefix.'attach_protect SET hashkey = "'.$newHash.'", hashtime = "'.(time()+86400).'" WHERE hashkey = "'.$oldHash['hashkey'].'";';
-				$this->ipbwi->ips_wrapper->DB->query($sql_update);
+				$sql_update = 'UPDATE '.$config->db_prefix.'attach_protect SET hashkey = "'.$newHash.'", hashtime = "'.(time()+86400).'" WHERE hashkey = "'.$oldHash['hashkey'].'";';
+				Ipbwi_IpsWrapper::instance()->DB->query($sql_update);
 				$this->hash = $newHash;
 			}elseif(empty($oldHash)){
-				$sql_insert = 'INSERT INTO '.ipbwi_DB_prefix.'attach_protect VALUES("'.$newHash.'", "'.(time()+86400).'");';
-				$this->ipbwi->ips_wrapper->DB->query($sql_insert);
+				$sql_insert = 'INSERT INTO '.$config->db_prefix.'attach_protect VALUES("'.$newHash.'", "'.(time()+86400).'");';
+				Ipbwi_IpsWrapper::instance()->DB->query($sql_insert);
 				$this->hash = $newHash;
 			}else{
 				$this->hash = $oldHash['hashkey'];
@@ -106,7 +120,7 @@
 			if(isset($this->mimeTypes[$ext])){
 				return $this->mimeTypes[$ext];
 			}else{
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('attachMimeNotFound'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('attachMimeNotFound'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 		}
@@ -156,7 +170,7 @@
 				}else{
 					$dbID = 'attach_id = "'.intval($IDs).'"';
 				}
-				$query = $this->ipbwi->ips_wrapper->DB->query('SELECT * FROM '.$this->ipbwi->board['sql_tbl_prefix'].'attachments WHERE ('.$dbID.') ORDER BY attach_date DESC');
+				$query = Ipbwi_IpsWrapper::instance()->DB->query('SELECT * FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'attachments WHERE ('.$dbID.') ORDER BY attach_date DESC');
 			}else{
 				// more than one IDs?
 				if(is_array($IDs)){
@@ -171,24 +185,24 @@
 				}else{
 					$dbID = 'attach_rel_id = "'.intval($IDs).'"';
 				}
-				$query = $this->ipbwi->ips_wrapper->DB->query('SELECT * FROM '.$this->ipbwi->board['sql_tbl_prefix'].'attachments WHERE attach_rel_module = "'.$module.'" AND ('.$dbID.') ORDER BY attach_date DESC');
+				$query = Ipbwi_IpsWrapper::instance()->DB->query('SELECT * FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'attachments WHERE attach_rel_module = "'.$module.'" AND ('.$dbID.') ORDER BY attach_date DESC');
 			}
-			if($this->ipbwi->ips_wrapper->DB->getTotalRows($query) == 0){
+			if(Ipbwi_IpsWrapper::instance()->DB->getTotalRows($query) == 0){
 				return false;
 			}
-			while($row = $this->ipbwi->ips_wrapper->DB->fetch($query)){
+			while($row = Ipbwi_IpsWrapper::instance()->DB->fetch($query)){
 				// define board link
-				$row['boardURL'] = $this->ipbwi->getBoardVar('upload_url').$row['attach_location'];
+				$row['boardURL'] = Ipbwi::instance()->getBoardVar('upload_url').$row['attach_location'];
 				$row['boardLink'] = '<a href="'.$row['boardURL'].'">'.$row['attach_file'].'</a>';
 				if($row['attach_is_image'] == 1){
 					// get image code
-					$filePath = $this->ipbwi->getBoardVar('upload_dir').$row['attach_location'];
+					$filePath = Ipbwi::instance()->getBoardVar('upload_dir').$row['attach_location'];
 					if(file_exists($filePath) && $size = getimagesize($filePath)){
 						$row['boardImageHTML'] = '<img src="'.$row['boardURL'].'" '.$size[3].' alt="'.$row['attach_file'].'" />';
 					}
 					// get thumb code
 					if($row['attach_thumb_location'] != ''){
-						$row['boardThumbHTML'] = '<a href="'.$row['boardURL'].'"><img src="'.$this->ipbwi->getBoardVar('upload_url').$row['attach_thumb_location'].'" width="'.$row['attach_thumb_width'].'" height="'.$row['attach_thumb_height'].'" alt="'.$row['attach_file'].'" /></a>';
+						$row['boardThumbHTML'] = '<a href="'.$row['boardURL'].'"><img src="'.Ipbwi::instance()->getBoardVar('upload_url').$row['attach_thumb_location'].'" width="'.$row['attach_thumb_width'].'" height="'.$row['attach_thumb_height'].'" alt="'.$row['attach_file'].'" /></a>';
 					}
 				}
 				// define default best-case-code
@@ -205,13 +219,13 @@
 					$row['ipbwiLink'] = '<a href="'.$row['ipbwiURL'].'">'.$row['attach_file'].'</a>';
 					if($row['attach_is_image'] == 1){
 						// get image code
-						$filePath = $this->ipbwi->getBoardVar('upload_dir').$row['attach_location'];
+						$filePath = Ipbwi::instance()->getBoardVar('upload_dir').$row['attach_location'];
 						if($size = getimagesize($filePath)){
 							$row['ipbwiImageHTML'] = '<img src="'.$row['ipbwiURL'].'" '.$size[3].' alt="'.$row['attach_file'].'" />';
 						}
 						// get thumb code
 						if($row['attach_thumb_location'] != ''){
-							$row['ipbwiThumbHTML'] = '<a href="'.$row['ipbwiURL'].'"><img src="'.$this->ipbwi->getBoardVar('upload_url').$row['attach_thumb_location'].'" width="'.$row['attach_thumb_width'].'" height="'.$row['attach_thumb_height'].'" alt="'.$row['attach_file'].'" /></a>';
+							$row['ipbwiThumbHTML'] = '<a href="'.$row['ipbwiURL'].'"><img src="'.Ipbwi::instance()->getBoardVar('upload_url').$row['attach_thumb_location'].'" width="'.$row['attach_thumb_width'].'" height="'.$row['attach_thumb_height'].'" alt="'.$row['attach_file'].'" /></a>';
 						}
 					}
 					// define default best-case-code
@@ -255,10 +269,10 @@
 		public function getList($IDs,$settings=array(),$bypassPerms=false){
 			// retrieve attachments of a forum
 			if($settings['type'] == 'forum'){
-				$IDs = $this->ipbwi->topic->getListIDs($IDs,$settings['start'],$settings['limit'],$bypassPerms);
+				$IDs = Ipbwi::instance()->topic->getListIDs($IDs,$settings['start'],$settings['limit'],$bypassPerms);
 			// retrieve attachments of a topic
 			}elseif($settings['type'] == 'topic'){
-				$IDs = $this->ipbwi->post->getListIDs($IDs);
+				$IDs = Ipbwi::instance()->post->getListIDs($IDs);
 			}
 			// return attachment informations
 			return $this->info($IDs,$settings,$bypassPerms);
@@ -279,7 +293,7 @@
 			$attachInfo = $this->info($attachID,$bypassPerms);
 			if($attachInfo){
 				$fileName = $attachInfo['attach_file'];
-				$fileAddress = $this->ipbwi->getBoardVar('upload_dir').$attachInfo['attach_location'];
+				$fileAddress = Ipbwi::instance()->getBoardVar('upload_dir').$attachInfo['attach_location'];
 				if(file_exists($fileAddress) && is_file($fileAddress)){
 					header('Content-Length: '.filesize($fileAddress));
 					// if attachment is a known image
@@ -304,11 +318,11 @@
 						die();
 					}
 				}else{
-					$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('attachNotFoundFS'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('attachNotFoundFS'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					return false;
 				}
 			}else{
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('attachNotFoundDB'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('attachNotFoundDB'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 		}
@@ -324,55 +338,55 @@
 			rename($dir.$_POST['file_select'], $GLOBALS['straightCMS']['config']['root']['uploadpath'].$new_file_name);
 		}
 		private function copyFile($fileName,$postID){
-			if($this->ipbwi->member->isLoggedIn()){
-				$member = $this->ipbwi->member->info();
-				$post = $this->ipbwi->post->info($postID);
+			if(Ipbwi::instance()->member->isLoggedIn()){
+				$member = Ipbwi::instance()->member->info();
+				$post = Ipbwi::instance()->post->info($postID);
 				// @todo implement permission check including bypass perms
 				$files = scandir(ipbwi_UPLOAD_PATH);
 				if(in_array($_POST['file_select'],$files)){
 					// copy file
 					$newFileName	= 'post-'.$member['id'].'-'.time().'.ipb';
-					$newDest		= $this->ipbwi->getBoardVar('upload_dir').$newFileName;
+					$newDest		= Ipbwi::instance()->getBoardVar('upload_dir').$newFileName;
 					$fileParts		= explode('.',$fileName);
 					$filePartsCount	= count($fileParts);
 					$fileExt		= $fileParts[$filePartsCount-1];
 					copy(ipbwi_UPLOAD_PATH.$fileName, $newDest);
 					// check of allowed file extension
-					$this->ipbwi->ips_wrapper->DB->query('SELECT atype_post FROM '.$this->ipbwi->board['sql_tbl_prefix'].'attachments_type WHERE atype_extension = '.$fileExt);
-					if($row = $this->ipbwi->ips_wrapper->DB->fetch()){
+					Ipbwi_IpsWrapper::instance()->DB->query('SELECT atype_post FROM '.Ipbwi::instance()->board['sql_tbl_prefix'].'attachments_type WHERE atype_extension = '.$fileExt);
+					if($row = Ipbwi_IpsWrapper::instance()->DB->fetch()){
 						if($row['atype_post'] != 1){
-							$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('attachFileExtNotAllowed'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+							Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('attachFileExtNotAllowed'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 							return false;
 						}
 					}else{
-						$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('attachFileExtNotExists'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+						Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('attachFileExtNotExists'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 						return false;
 					}
 					// check if file exceeds max file space per attachment of user
-					$group = $this->ipbwi->group->info();
+					$group = Ipbwi::instance()->group->info();
 					if(filesize($newDest) > $group['g_attach_per_post']){
-						$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('attachFileTooBig'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+						Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('attachFileTooBig'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 						return false;
 					}
 					// check if file exceeds max file space of user
 					if(filesize($newDest) > $group['g_attach_max']){
-						$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('attachFileExceedsUserSpace'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+						Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('attachFileExceedsUserSpace'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 						return false;
 					}
 					// check for permissions
-					$topic = $this->ipbwi->topic->info($post['topic_id']);
-					$forum = $this->ipbwi->forum->info($topic['forum_id']);
+					$topic = Ipbwi::instance()->topic->info($post['topic_id']);
+					$forum = Ipbwi::instance()->forum->info($topic['forum_id']);
 					$permission = unserialize($forum['permission_array']);
 					$permission = $permission['upload_perms'];
 					if(!in_array($group['g_id'],explode(',',$permission)) && !$bypassPerms){
-						$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+						Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('noPerms'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 						return false;
 					}
 					// @todo implement thumb creation
 					// update database
 					$hash			= $post['post_key'];
 					$sql =
-					'INSERT INTO '.$this->ipbwi->board['sql_tbl_prefix'].'attachments'.
+					'INSERT INTO '.Ipbwi::instance()->board['sql_tbl_prefix'].'attachments'.
 					'(' .
 						'attach_ext,
 						attach_file,
@@ -406,21 +420,21 @@
 						"'.$hash.'",
 						"0",
 						"'.$member['id'].'",
-						"'.filesize($this->ipbwi->getBoardVar('upload_dir').$newFileName).'"'.
+						"'.filesize(Ipbwi::instance()->getBoardVar('upload_dir').$newFileName).'"'.
 					');';
-					if($this->ipbwi->ips_wrapper->DB->query($sql)){
-						$this->ipbwi->addSystemMessage('Success',$this->ipbwi->getLibLang('attachCreated'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					if(Ipbwi_IpsWrapper::instance()->DB->query($sql)){
+						Ipbwi::instance()->addSystemMessage('Success',Ipbwi::instance()->getLibLang('attachCreated'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 						return true;
 					}else{
-						$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('attachCreationFailed'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+						Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('attachCreationFailed'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 						return false;
 					}
 				}else{
-					$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('attachFileNotInUploadDir'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+					Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('attachFileNotInUploadDir'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 					return false;
 				}
 			}else{
-				$this->ipbwi->addSystemMessage('Error',$this->ipbwi->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
+				Ipbwi::instance()->addSystemMessage('Error',Ipbwi::instance()->getLibLang('membersOnly'),'Located in file <strong>'.__FILE__.'</strong> at class <strong>'.__CLASS__.'</strong> in function <strong>'.__FUNCTION__.'</strong> on line #<strong>'.__LINE__.'</strong>');
 				return false;
 			}
 		}

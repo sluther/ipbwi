@@ -29,8 +29,7 @@
 		private static 		$systemMessage	= array();
 		protected 			$board			= array();
 		public				$DBlog			= null;
-//		protected			$config			= null;
-		private				$loaded_classes = array();
+		private				$registry = array();
 	
 		/**
 		 * @desc			Singleton method - instantiates the class or returns an existing instance
@@ -46,46 +45,48 @@
 			}
 			return self::$instance;
 		}
+		
 		/**
-		 * @desc			Bootstraps the class
-		 * @param	array	$config Array containing config info
+		 * @desc			Inits the class, setting up vars
+		 * @param	array	$config array containing config info
 		 * @author			Scott Luther
 		 * @since			3.1
 		 * 
 		 * @ignore
 		 */
 		public function init($config) {
-			Ipbwi_Config::instance()->set_config($config);
+			$this->registry['config'] = Ipbwi_Config::instance();
+			$this->config->set_config($config);
+			
 			// check for DB prefix
 			if(!isset($this->config->db_prefix) or $this->config->db_prefix == ''){
 				Ipbwi_Config::instance()->set_config(array('db_prefix' => 'ipbwi_'));
 			}
 			self::setLang($this->config);
-
+			
 			// initialize IP.board Interface
 			if(file_exists($this->config->board_admin_path.'api/api_core.php') === true) {
 				require_once($this->config->board_admin_path.'api/api_core.php');
-				Ipbwi_IpsWrapper::instance()->init($this->config);
+				
+				$this->registry['ips_wrapper'] = Ipbwi_IpsWrapper::instance()->init($this->config);
 				
 				// retrieve common vars
-				$this->board					= $this->ips_wrapper->settings;
-				$this->board['version']			= $this->ips_wrapper->caches['app_cache']['core']['app_version'];
-				$this->board['version_long']	= $this->ips_wrapper->caches['app_cache']['core']['app_long_version'];
-				$this->board['url']				= str_replace('?','',$this->ips_wrapper->settings['board_url']).'/';
-				$this->board['name']			= $this->ips_wrapper->settings['board_name'];
-				$this->board['basedir']			= $this->config->board_path;
-				$this->board['upload_dir']		= $this->ips_wrapper->settings['upload_dir'].'/';
-				$this->board['upload_url']		= $this->ips_wrapper->settings['upload_url'].'/';
-				$this->board['home_name']		= $this->ips_wrapper->settings['home_name'];
-				$this->board['home_url']		= $this->ips_wrapper->settings['home_url'].'/';
-				$this->board['emo_url']			= str_replace('<#EMO_DIR#>','default',$this->ips_wrapper->settings['emoticons_url']).'/';
+				$this->registry['board']					= Ipbwi_IpsWrapper::instance()->settings;
+				$this->registry['board']['version']			= Ipbwi_IpsWrapper::instance()->caches['app_cache']['core']['app_version'];
+				$this->registry['board']['version_long']	= Ipbwi_IpsWrapper::instance()->caches['app_cache']['core']['app_long_version'];
+				$this->registry['board']['url']				= str_replace('?','',Ipbwi_IpsWrapper::instance()->settings['board_url']).'/';
+				$this->registry['board']['name']			= Ipbwi_IpsWrapper::instance()->settings['board_name'];
+				$this->registry['board']['basedir']			= $this->config->board_path;
+				$this->registry['board']['upload_dir']		= Ipbwi_IpsWrapper::instance()->settings['upload_dir'].'/';
+				$this->registry['board']['upload_url']		= Ipbwi_IpsWrapper::instance()->settings['upload_url'].'/';
+				$this->registry['board']['home_name']		= Ipbwi_IpsWrapper::instance()->settings['home_name'];
+				$this->registry['board']['home_url']		= Ipbwi_IpsWrapper::instance()->settings['home_url'].'/';
+				$this->registry['board']['emo_url']			= str_replace('<#EMO_DIR#>','default',Ipbwi_IpsWrapper::instance()->settings['emoticons_url']).'/';
 				
 				if($this->config->cookie_domain !== '') {
-					$this->board['cookie_domain']						= $this->config->cookie_domain;
-					$this->ips_wrapper->settings['cookie_domain']		= $this->config->cookie_domain;
+					$this->registry['board']['cookie_domain']								= $this->config->cookie_domain;
+					Ipbwi_IpsWrapper::instance()->settings['cookie_domain']		= $this->config->cookie_domain;
 				}
-				// init cache
-				$this->cache = new Ipbwi_Cache($this);
 			} else {
 				die('<p><strong>Error:</strong> Board admin path is not correct: '.$this->config->board_admin_path.'</p>');
 			}
@@ -93,7 +94,7 @@
 		}
 
 		/**
-		 * @desc			Load's requested libraries dynamically
+		 * @desc			Load's requested libraries dynamically by aliasing requested properties to their respective instance
 		 * @param	string	$name library-name
 		 * @return			class object of the requested library
 		 * @author			Matthias Reuter
@@ -101,18 +102,11 @@
 		 * @ignore
 		 */
 		public function __get($name){
-			if($name == 'ips_wrapper')
-			{
-				$name = 'ipswrapper';
+			if(!array_key_exists($name, $this->registry)) {
+				$classname = '\Ipbwi\Ipbwi_'.ucfirst($name);
+				$this->registry[$name] = $classname::instance()->init($this->registry['config']);
 			}
-			$name = ucfirst($name);
-			if(!array_key_exists($name, $this->loaded_classes)) {
-				if(!class_exists($name)) {
-					$classname = '\Ipbwi\Ipbwi_'.$name;
-					$this->loaded_classes[$name] = $classname::instance($this);
-				}
-			}
-			return $this->loaded_classes[$name];
+			return $this->registry[$name];
 		}
 
 		private function __construct() {
@@ -198,8 +192,8 @@
 		 * @since			2.0
 		 */
 		public function getBoardVar($var){
-			if(isset($this->board[$var])){
-				return $this->board[$var];
+			if(isset($this->registry['board'][$var])){
+				return $this->registry['board'][$var];
 			}else{
 				return false;
 			}
@@ -434,12 +428,12 @@
 			// Also Check no member offset
 			if(!$noBoard){
 				if(!$noMember && empty($info['time_offset'])){
-					$timeStamp = $timeStamp + ($this->ips_wrapper->settings['time_offset'] * 3600);
+					$timeStamp = $timeStamp + (Ipbwi_IpsWrapper::instance()->settings['time_offset'] * 3600);
 				}
 			}
 			// Board Time Adjust
-			if($this->ips_wrapper->settings['time_adjust']){
-				$timeStamp = $timeStamp + ($this->ips_wrapper->settings['time_adjust'] * 60);
+			if(Ipbwi_IpsWrapper::instance()->settings['time_adjust']){
+				$timeStamp = $timeStamp + (Ipbwi_IpsWrapper::instance()->settings['time_adjust'] * 60);
 			}
 			// If member has set an indiviual offset in the User CP
 			// because they may be in a totally different country
