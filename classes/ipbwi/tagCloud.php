@@ -10,17 +10,35 @@
 	 */
 	namespace Ipbwi;
 	class Ipbwi_TagCloud {
-		private $ipbwi			= null;
+		private static $instance = null;
+	
 		/**
-		 * @desc			Loads and checks different vars when class is initiating
-		 * @author			Matthias Reuter
-		 * @since			2.0
+		 * @desc			Singleton method - instantiates the class or returns an existing instance
+		 * @author			Scott Luther
+		 * @since			3.1
+		 * 
 		 * @ignore
 		 */
-		public function __construct($ipbwi){
-			// loads common classes
-			Ipbwi::instance()-> = $ipbwi;
-
+		
+		public static function instance() {
+			if(!isset(self::$instance)) {
+				$class = __CLASS__;
+				self::$instance = new $class;
+			}
+			return self::$instance;
+		}
+		
+		/**
+		 * @desc			Inits the class, setting up vars
+		 * @param	object	$config object containing config
+		 * @return	object	instance of class
+		 * @author			Scott Luther
+		 * @since			3.1
+		 * 
+		 * @ignore
+		 */
+		
+		public function init($config) {
 			// create table if not exists
 			$sql_create = '
 			CREATE TABLE IF NOT EXISTS '.$config->db_prefix.'tagcloud (
@@ -34,6 +52,16 @@
 			) ENGINE=MyISAM DEFAULT CHARSET=latin1 ;';
 
 			Ipbwi_IpsWrapper::instance()->DB->query($sql_create);
+			return self::$instance;
+		}
+		
+		/**
+		 * @desc			Loads and checks different vars when class is initiating
+		 * @author			Matthias Reuter
+		 * @since			2.0
+		 * @ignore
+		 */
+		private function __construct(){
 		}
 		/**
 		 * @desc			Creates a tag cloud
