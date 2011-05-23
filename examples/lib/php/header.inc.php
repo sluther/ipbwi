@@ -82,9 +82,9 @@ if($ipbwi->member->isLoggedIn()){
 									<strong>Welcome back, '.$info['members_display_name'].'!</strong>
 									<p>Member Settings</p>
 									<ul>
-										<li><a href="'.ipbwi_WEB_URL.'member_info.php">Profile Info</a></li>
-										<li><a href="'.ipbwi_WEB_URL.'member_logout.php">Logout</a></li>
-										<li><a href="'.ipbwi_WEB_URL.'member_delete.php">Delete Account</a></li>
+										<li><a href="'.$webURL.'member_info.php">Profile Info</a></li>
+										<li><a href="'.$webURL.'member_logout.php">Logout</a></li>
+										<li><a href="'.$webURL.'member_delete.php">Delete Account</a></li>
 									</ul>
 								</div>
 ';
@@ -92,13 +92,13 @@ if($ipbwi->member->isLoggedIn()){
 	$header .= '
 								<div class="i_important">
 									<strong>You are not logged in!</strong>
-									<p><a href="'.ipbwi_WEB_URL.'member_create.php">Register</a> for free and <a href="'.ipbwi_WEB_URL.'member_login.php">login</a> to get access to all live-examples.</p>
+									<p><a href="'.$webURL.'member_create.php">Register</a> for free and <a href="'.$webURL.'member_login.php">login</a> to get access to all live-examples.</p>
 								</div>
 ';
 }
 	$header .= '
 							</div>
-							<p style="border:2px solid #000;padding:10px;background-color:#FFFFAA;text-align:center;"><img src="'.ipbwi_WEB_URL.'lib/img/icons/32x32/actions/document-save.png" width="32" height="32" alt="Download" style="vertical-align:middle;" /> <a href="http://ipbwi.com/products/" style="text-decoration:none;font-weight:bold;">Download latest version</a></p>
+							<p style="border:2px solid #000;padding:10px;background-color:#FFFFAA;text-align:center;"><img src="'.$webURL.'lib/img/icons/32x32/actions/document-save.png" width="32" height="32" alt="Download" style="vertical-align:middle;" /> <a href="http://ipbwi.com/products/" style="text-decoration:none;font-weight:bold;">Download latest version</a></p>
 						</td>
 					</tr>
 				</table>

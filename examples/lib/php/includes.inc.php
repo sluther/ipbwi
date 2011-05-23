@@ -64,7 +64,7 @@ This is a Forum-Poll, created via the [url=http://ipbwi.com]IPBWI[/url]. Feel fr
 Have fun!';
 
 	// copy static var to dynamic to make it compatible with heredoc in header/footer file
-	$webURL = ipbwi_WEB_URL;
+	$webURL = $ipbwi->config->web_url;
 
 	// print sourcecode of current page
 	if(isset($_GET['show']) && $_GET['show'] == 'source'){
