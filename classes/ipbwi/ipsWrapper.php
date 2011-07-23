@@ -49,7 +49,7 @@ class Ipbwi_IpsWrapper extends \apiCore {
 	
 	public function init($config) {
 		parent::init();
-		$this->loggedIn					= (bool) $this->lang->memberData['member_id']; // status wether a member is logged in
+		$this->loggedIn					= (bool) $this->memberData['member_id']; // status wether a member is logged in
 		$this->settings['base_url']		= $this->settings['board_url'].'?';
 		
 		// get common functions
@@ -117,7 +117,7 @@ class Ipbwi_IpsWrapper extends \apiCore {
 	}
 	// return data of current member
 	public function myInfo(){
-		return $this->lang->memberData;
+		return $this->memberData;
 	}
 	
 	// change user's pw

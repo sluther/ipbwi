@@ -72,8 +72,8 @@
 				
 				// retrieve common vars
 				$this->registry['board']					= Ipbwi_IpsWrapper::instance()->settings;
-				$this->registry['board']['version']			= Ipbwi_IpsWrapper::instance()->caches['app_cache']['core']['app_version'];
-				$this->registry['board']['version_long']	= Ipbwi_IpsWrapper::instance()->caches['app_cache']['core']['app_long_version'];
+                // $this->registry['board']['version']          = Ipbwi_IpsWrapper::instance()->caches['app_cache']['core']['app_version'];
+                // $this->registry['board']['version_long'] = Ipbwi_IpsWrapper::instance()->caches['app_cache']['core']['app_long_version'];
 				$this->registry['board']['url']				= str_replace('?','',Ipbwi_IpsWrapper::instance()->settings['board_url']).'/';
 				$this->registry['board']['name']			= Ipbwi_IpsWrapper::instance()->settings['board_name'];
 				$this->registry['board']['basedir']			= $this->config->board_path;
@@ -448,7 +448,7 @@
 				}
 			}
 			if($dateFormat){
-				$timeStamp = strftime($dateFormat, $timeStamp);
+                $timeStamp = strftime(str_replace('%T', '%H:%M:%S', $dateFormat), $timeStamp);
 			}
 			return $timeStamp;
 		}
