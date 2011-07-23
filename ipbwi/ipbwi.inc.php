@@ -80,8 +80,8 @@
 				
 				// retrieve common vars
 				$this->board					= $this->ips_wrapper->settings;
-				$this->board['version']			= $this->ips_wrapper->caches['app_cache']['core']['app_version'];
-				$this->board['version_long']	= $this->ips_wrapper->caches['app_cache']['core']['app_long_version'];
+                // $this->board['version']          = $this->ips_wrapper->caches['app_cache']['core']['app_version'];
+                // $this->board['version_long'] = $this->ips_wrapper->caches['app_cache']['core']['app_long_version'];
 				$this->board['url']				= str_replace('?','',$this->ips_wrapper->settings['board_url']).'/';
 				$this->board['name']			= $this->ips_wrapper->settings['board_name'];
 				$this->board['basedir']			= ipbwi_BOARD_PATH;
@@ -425,7 +425,7 @@
 				}
 			}
 			if($dateFormat){
-				$timeStamp = strftime($dateFormat, $timeStamp);
+                $timeStamp = strftime(str_replace('%T', '%H:%M:%S', $dateFormat), $timeStamp);
 			}
 			return $timeStamp;
 		}

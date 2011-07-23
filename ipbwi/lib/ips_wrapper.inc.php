@@ -29,7 +29,7 @@ class ipbwi_ips_wrapper extends apiCore {
 	public function __construct(){
 		$this->init();
 		
-		$this->loggedIn					= (bool) $this->lang->memberData['member_id']; // status wether a member is logged in
+		$this->loggedIn					= (bool) $this->memberData['member_id']; // status whether a member is logged in
 		$this->settings['base_url']		= $this->settings['board_url'].'?';
 		
 		// get common functions
@@ -94,7 +94,7 @@ class ipbwi_ips_wrapper extends apiCore {
 	}
 	// return data of current member
 	public function myInfo(){
-		return $this->lang->memberData;
+		return $this->memberData;
 	}
 	
 	// change user's pw
